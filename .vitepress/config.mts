@@ -12,7 +12,7 @@ export default withMermaid(defineConfig({
   themeConfig: {
     nav: [
       { text: '首页', link: '/' },
-      { text: 'Android', link: '/#content-map' },
+      { text: 'Android', link: '/android/1.coroutine.md' },
       { text: 'iOS', link: '/ios/basic/1.struct_vs_class_v1' },
       { text: 'OHOS', link: '/#content-map' },
       { text: 'Tools', link: '/#content-map' },
