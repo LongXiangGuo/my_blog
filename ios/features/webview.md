@@ -16,8 +16,8 @@
    HTMLTokenizer 负责将字节流解析为一个个 HTMLToken（如 StartTag, EndTag, Character）。WebKit 严格遵循 HTML5 规范的字符状态机。
    2. 语法解析与建树 (Tree Construction)：
    HTMLDocumentParser 接收 Token，并调用 HTMLConstructionSite。在 WebCore 源码中，你会看到它维护着一个打开元素的栈 (HTMLElementStack)。
-   * 遇到 StartTag（如 <div>）：创建对应的 HTMLDivElement 实例，将其挂载到当前栈顶节点的子节点列表，并将其压入栈顶。
-      * 遇到 EndTag（如 </div>）：将匹配的节点弹出栈。
+   * 遇到 StartTag（如 `<div>`）：创建对应的 HTMLDivElement 实例，将其挂载到当前栈顶节点的子节点列表，并将其压入栈顶。
+      * 遇到 EndTag（如 `</div>`）：将匹配的节点弹出栈。
    3. 安全防护与边解析边渲染：
    WebKit 的解析是渐进式 (Incremental) 的。为了提升首屏速度，Parser 不需要等待整个 HTML 下载完毕。每解析一部分 Token，就会挂载到 Document 树上。
 
@@ -122,13 +122,13 @@ JavaScript 在 WebKit 中由 JavaScriptCore (JSC) 引擎驱动。它是一个拥
         ▼                    ▼                    ▼               ▼                    ▼                    ▼
 
 
-| 进程类型 | 核心类名 | 主要职责 / 作用 |
-| :--- | :--- | :--- |
-| **UIProcess** | `WKUserContentController` | 宿主 App 的直接接口。负责管理脚本注入（User Scripts）以及注册/销毁消息监听器（Message Handlers）。 |
-| **UIProcess** | `WebPageProxy` | WebContent 进程在 App 进程中的“代理人”。负责维护进程间连接，串联 IPC 通道，分发从网页端收到的各类消息与事件。 |
-| **WebContent** | `WebPage` | 页面在沙盒进程中的实体根对象。管理当前页面的加载状态、DOM 树上下文，并响应来自 `WebPageProxy` 的控制指令。 |
-| **WebContent** | `JSUserMessageHandler` | 跨语言桥梁。作为 WebCore 的 C++ 拦截层，把自身的 C++ 方法包装并暴露给 JSC 引擎，成为 JS 环境中可调用的 Native 函数。 |
-| **WebContent** | `JavaScriptCore (JSC)` | JS 虚拟机。负责解析、编译并运行网页的 JavaScript 代码，管理 JS 对象的生命周期以及闭包上下文。 |
+| 进程类型       | 核心类名                  | 主要职责 / 作用                                                                                                      |
+| :------------- | :------------------------ | :------------------------------------------------------------------------------------------------------------------- |
+| **UIProcess**  | `WKUserContentController` | 宿主 App 的直接接口。负责管理脚本注入（User Scripts）以及注册/销毁消息监听器（Message Handlers）。                   |
+| **UIProcess**  | `WebPageProxy`            | WebContent 进程在 App 进程中的“代理人”。负责维护进程间连接，串联 IPC 通道，分发从网页端收到的各类消息与事件。        |
+| **WebContent** | `WebPage`                 | 页面在沙盒进程中的实体根对象。管理当前页面的加载状态、DOM 树上下文，并响应来自 `WebPageProxy` 的控制指令。           |
+| **WebContent** | `JSUserMessageHandler`    | 跨语言桥梁。作为 WebCore 的 C++ 拦截层，把自身的 C++ 方法包装并暴露给 JSC 引擎，成为 JS 环境中可调用的 Native 函数。 |
+| **WebContent** | `JavaScriptCore (JSC)`    | JS 虚拟机。负责解析、编译并运行网页的 JavaScript 代码，管理 JS 对象的生命周期以及闭包上下文。                        |
 
 ## 1. 注入阶段（宿主端注册）
 当你在 Swift 中执行 controller.add(coordinator, name: "heightContent") 时：
