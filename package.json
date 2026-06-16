@@ -1,0 +1,25 @@
+{
+  "name": "hardware",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "docs:sidebar": "node scripts/generate-sidebar.mjs",
+    "predocs:dev": "npm run docs:sidebar",
+    "docs:dev": "vitepress dev",
+    "predocs:build": "npm run docs:sidebar",
+    "docs:build": "vitepress build",
+    "docs:preview": "vitepress preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "debug": "^4.4.3",
+    "mermaid": "^11.15.0",
+    "vitepress": "^1.6.4",
+    "vitepress-plugin-mermaid": "^2.0.17",
+    "vue": "^3.5.38"
+  }
+}
