@@ -5,7 +5,7 @@
 * WebContent 进程：受沙盒严格限制，负责实际的解析、排版、JS 执行和渲染。它们之间通过 IPC (Inter-Process Communication) 传递数据。
 
 下面我们从 WebKit（WebCore）的源码逻辑出发，逐步剖析 DOM、CSS、JS 的协同工作原理。
-------------------------------
+
 ## 一、 破壁：从 HTML 到 DOM 树的构建
 当 WKWebView 收到网络数据流（Resource Loader 递交的二进制数据）时，解析序幕正式拉开。
 
@@ -21,9 +21,8 @@
    3. 安全防护与边解析边渲染：
    WebKit 的解析是渐进式 (Incremental) 的。为了提升首屏速度，Parser 不需要等待整个 HTML 下载完毕。每解析一部分 Token，就会挂载到 Document 树上。
 
-------------------------------
 ## 二、 赋能：CSS 样式计算与 RenderTree
-在 DOM 树构建的同时，遇到 <style> 或 <link> 时，CSSParser 开始工作。
+在 DOM 树构建的同时，遇到 `<style>` 或 `<link>` 时，CSSParser 开始工作。
 
 [CSS Text] ──> CSSParser ──> StyleResolver ──> RenderTree
 
