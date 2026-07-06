@@ -29,18 +29,3 @@ notes
 
 Xcode 接入copliot
 Xcode 接入deepseek
-
-## TODO
-
-MyAppone
-3dview
-tvengine
-mobile-docs
-cn_photo_wall 
-media_publish
-socket_plugin
-skt
-skt_atlas
-omc_api_client
-native_logging
-book_mark
