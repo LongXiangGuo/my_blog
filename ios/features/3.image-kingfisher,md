@@ -1,0 +1,388 @@
+# Kingfisher 源码深度解析：架构、设计模式与实现原理
+
+
+## 一、写在前面
+
+在 iOS 图片加载领域，Kingfisher 的地位几乎可以和 Alamofire 在网络请求领域的地位相提并论。作为喵神（onevcat）用 Swift 编写的异步图片下载和缓存库，Kingfisher 凭借纯 Swift 的实现、优雅的命名空间设计和完善的功能集，成了 Swift 社区使用最广泛的图片加载框架之一。
+
+日常开发中，`imageView.kf.setImage(with: url)` 这行代码几乎成了 Swift 项目加载网络图片的标准写法。但这一行代码背后到底发生了什么？缓存是怎么设计的？为什么要用 `.kf` 这个命名空间？图片处理器（Processor）和缓存序列化器（CacheSerializer）又是如何协同工作的？带着这些问题，我把 Kingfisher 的最新源码从头到尾梳理了一遍。
+
+Kingfisher 的设计深受 SDWebImage 的影响，但作为纯 Swift 实现，它在 API 设计、类型安全和 Swift 语言特性的运用上走得更远。本文的分析基于 Kingfisher 7.x/8.x 版本，如果你还在用较早的版本，部分 API 和实现细节会有所不同。
+
+
+## 二、整体架构设计
+
+### 2.1 源码目录结构
+
+Kingfisher 的源码组织非常清晰，主要分为以下几个模块：
+
+**General 模块**：框架的核心调度层，包含 `KingfisherManager.swift`——所有图片加载请求的统一入口和调度中心。
+
+**Cache 模块**：缓存管理核心，包含 `ImageCache.swift`、`MemoryStorage.swift`、`DiskStorage.swift` 等文件。这个模块实现了内存和磁盘的二级缓存机制。
+
+**Download 模块**：网络下载核心，包含 `ImageDownloader.swift` 和 `ImageDownloaderDelegate.swift`，负责图片的异步网络下载。
+
+**Image 模块**：图片处理相关，包含 `ImageProcessor.swift`、`ImageTransition.swift` 等，定义了图片的加工处理能力。
+
+**Utility 模块**：工具类和辅助功能，包括 `KingfisherOptionsInfo.swift`（配置选项）、`Result.swift`、`Prefetcher.swift`（预加载）等。
+
+**SwiftUI 模块**：从 6.0 版本开始整合到主框架中，提供了 `KFImage` 等 SwiftUI 原生组件。
+
+### 2.2 分层架构
+
+从分层角度看，Kingfisher 的架构可以分为四个层次：
+
+**最底层是 Foundation 层**，直接依赖 `URLSession`、`NSCache`、`FileManager` 等系统组件。Kingfisher 没有重新实现网络请求或缓存存储的底层逻辑，而是在系统能力之上做封装。
+
+**往上是核心服务层**，包括 `ImageDownloader`（下载服务）和 `ImageCache`（缓存服务）。这两个服务可以**独立使用**，不一定非得全套使用——这也是 Kingfisher 模块化设计的一个重要特点。
+
+**再往上是调度层**，即 `KingfisherManager`。它不直接做下载也不直接做缓存，而是协调 Downloader 和 Cache 两个服务，完成“先查缓存、缓存未命中再下载、下载完成后写入缓存”的核心流程。
+
+**最顶层是视图层**，即各种 `kf` 命名空间扩展：`UIImageView.kf`、`UIButton.kf`、`NSImageView.kf` 等。这些扩展对外提供简洁的 API，所有图片加载操作最终都会收敛到 `KingfisherManager` 中。
+
+
+## 三、核心类图与职责
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                       视图层 (UIKit/AppKit/SwiftUI)                │
+│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐  │
+│  │ UIImageView.kf   │  │ UIButton.kf      │  │ KFImage (SwiftUI)│  │
+│  │ .setImage(with:) │  │ .setImage(with:) │  │                  │  │
+│  └────────┬─────────┘  └────────┬─────────┘  └────────┬─────────┘  │
+│           │                     │                     │             │
+│           └─────────────────────┼─────────────────────┘             │
+│                                 ▼                                   │
+│  ┌──────────────────────────────────────────────────────────────┐  │
+│  │              KingfisherManager (class)                      │  │
+│  │  - downloader: ImageDownloader                             │  │
+│  │  - cache: ImageCache                                       │  │
+│  │  + retrieveImage(with:options:progress:completionHandler:) │  │
+│  │  + downloadAndCacheImage(with:options:...)                 │  │
+│  └──────────────────────┬──────────────────┬───────────────────┘  │
+│                         │                  │                       │
+│          ┌──────────────┴──────┐ ┌─────────┴──────────┐           │
+│          ▼                     ▼ ▼                     ▼           │
+│  ┌───────────────────┐  ┌──────────────────────┐                  │
+│  │ ImageCache        │  │ ImageDownloader      │                  │
+│  │ (class)           │  │ (class)              │                  │
+│  │ - memoryStorage   │  │ - downloadQueue      │                  │
+│  │ - diskStorage     │  │ - session           │                  │
+│  │ + store()         │  │ + downloadImage()   │                  │
+│  │ + retrieveImage() │  │ + cancelTask()      │                  │
+│  └─────────┬─────────┘  └──────────┬───────────┘                  │
+│            │                       │                              │
+│  ┌─────────┴─────────┐ ┌──────────┴───────────┐                  │
+│  │ MemoryStorage     │ │ DiskStorage          │ │                  │
+│  │ (enum namespace)  │ │ (enum namespace)     │ │                  │
+│  │ - Backend         │ │ - Backend            │ │                  │
+│  │ - NSCache         │ │ - FileManager        │ │                  │
+│  └───────────────────┘ └──────────────────────┘                  │
+└─────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                      功能扩展层 (Features)                          │
+│  ┌──────────────────┐ ┌──────────────────┐ ┌────────────────────┐  │
+│  │ ImageProcessor   │ │ CacheSerializer  │ │ ImagePrefetcher   │  │
+│  │ (protocol)       │ │ (protocol)       │ │ (class)            │  │
+│  │ - process()      │ │ - data(with:)    │ │ - start()/stop()   │  │
+│  │ - identifier     │ │ - image(with:)   │ │                    │  │
+│  └──────────────────┘ └──────────────────┘ └────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+各核心类的职责如下：
+
+**KingfisherManager**：整个框架的调度中枢。它持有 `ImageDownloader` 和 `ImageCache` 的引用，负责协调缓存查询和网络下载的完整流程。所有外部图片加载请求最终都会通过它来处理。
+
+**ImageCache**：缓存管理类，同时管理内存缓存（`MemoryStorage`）和磁盘缓存（`DiskStorage`）。5.0 版本将内存和磁盘缓存分离成独立的 Storage，`ImageCache` 作为一个混合缓存抽象层保持 API 兼容。
+
+**MemoryStorage**：内存存储的命名空间，内部使用 `NSCache` 配合 LRU（最近最少使用）淘汰策略，确保高频访问的图片快速可用。
+
+**DiskStorage**：磁盘存储的命名空间，基于 `FileManager` 实现。缓存文件默认保存在系统 Caches 目录下，超过默认 7 天会清理。
+
+**ImageDownloader**：下载管理器，管理 `URLSession` 和下载任务队列。支持请求优先级、取消和并发控制。
+
+**ImageProcessor**：协议，定义了对原始图片数据进行加工处理的能力。`DefaultImageProcessor` 是最基础的实现，将下载的 Data 转换为 UIImage。
+
+**CacheSerializer**：协议，定义了图片序列化和反序列化的能力。负责将 UIImage 序列化为 Data 写入磁盘，以及将磁盘的 Data 反序列化为 UIImage。
+
+
+## 四、设计模式解析
+
+Kingfisher 之所以能提供如此优雅的 API，背后运用了多种经典的设计模式。
+
+### 4.1 命名空间模式（Namespace Pattern）
+
+Kingfisher 最标志性的设计就是 `.kf` 命名空间。通过 `KingfisherCompatible` 协议和 `KingfisherWrapper` 结构体，Kingfisher 为 UIKit 和 AppKit 的类添加了扩展，而不会污染系统类的命名空间。
+
+```swift
+// 伪代码示意
+public protocol KingfisherCompatible {
+    associatedtype CompatibleType
+    var kf: CompatibleType { get }
+}
+
+public struct KingfisherWrapper<Base> {
+    public let base: Base
+    public init(_ base: Base) { self.base = base }
+}
+
+extension UIImageView: KingfisherCompatible {
+    public var kf: KingfisherWrapper<UIImageView> {
+        return KingfisherWrapper(self)
+    }
+}
+```
+
+这种设计的好处是：**避免了与其它框架的 API 同名冲突**，同时让功能模块的归属更清晰、可维护性更强。Kingfisher 中命名空间有两种实现方式：一种是协议加包装器（如 `KingfisherCompatible`），另一种是把类型定义在空枚举里（如 `MemoryStorage`）。
+
+### 4.2 策略模式（Strategy Pattern）
+
+`ImageProcessor` 和 `CacheSerializer` 是两个典型的策略接口。
+
+- `ImageProcessor` 定义了“如何加工图片”的策略。`DefaultImageProcessor` 将 Data 转为 UIImage，`DownsamplingImageProcessor` 将图片缩放到指定尺寸，用户也可以自定义 Processor 来支持 WebP 等格式。
+- `CacheSerializer` 定义了“如何序列化和反序列化图片”的策略。默认的 `DefaultCacheSerializer` 将 UIImage 转为 PNG/JPEG Data 写入磁盘，从磁盘读取时再反序列化回来。
+
+策略模式让 Kingfisher 具备了良好的扩展性——用户可以在不修改框架代码的前提下，自由替换图片处理和缓存序列化的行为。
+
+### 4.3 外观模式（Facade Pattern）
+
+`KingfisherManager` 是典型的外观模式应用。它封装了 `ImageDownloader`、`ImageCache` 以及 `ImageProcessor` 和 `CacheSerializer` 的复杂交互，对外只暴露一个简洁的 `retrieveImage(with:options:progress:completionHandler:)` 方法。
+
+用户调用 `imageView.kf.setImage(with: url)` 时，实际上是在调用 `KingfisherManager.shared.retrieveImage(...)`。用户不需要关心缓存是怎么查的、下载是怎么发的、图片是怎么处理的——所有这些复杂性都被 `KingfisherManager` 屏蔽了。
+
+### 4.4 建造者模式（Builder Pattern）
+
+Kingfisher 的链式调用体现了建造者模式的思想。在 SwiftUI 中尤为明显：
+
+```swift
+KFImage(url)
+    .placeholder { ProgressView() }
+    .resizable()
+    .scaledToFit()
+```
+
+在 UIKit 中，`KingfisherOptionsInfo` 也采用了类似的可配置方式，通过 `options` 参数传递各种配置项。
+
+### 4.5 单例模式（Singleton Pattern）
+
+`KingfisherManager.shared` 和 `ImageCache.default` 都是单例。Kingfisher 提供了默认的单例实例供日常使用，同时也允许开发者创建自定义的 `KingfisherManager` 或 `ImageCache` 实例以满足特殊需求。
+
+### 4.6 观察者模式（Observer Pattern）
+
+Kingfisher 通过闭包回调来处理异步操作的结果。下载进度通过 `progressBlock` 回调，完成结果通过 `completionHandler` 回调。这种基于闭包的观察者模式是 Swift 异步编程的常见实践。
+
+
+## 五、完整工作流程
+
+当调用 `imageView.kf.setImage(with: url)` 时，整个流程大致如下：
+
+### 第一步：入口与 Resource 封装
+
+`UIImageView.kf.setImage(with:)` 是用户调用的入口方法。它首先将 URL 封装成一个 `Resource` 对象。`Resource` 包含两个关键属性：
+- `downloadURL`：实际的网络下载地址
+- `cacheKey`：缓存的键，默认就是 URL 的完整字符串
+
+内存缓存直接使用 `cacheKey` 作为 `NSCache` 的键，磁盘缓存则将 `cacheKey` 进行 MD5 加密后的字符串作为文件名。
+
+### 第二步：通过 KingfisherManager 发起加载
+
+`setImage` 方法内部调用 `KingfisherManager.shared.retrieveImage(with:options:progress:completionHandler:)`。Manager 会先校验 URL 的合法性，然后进入缓存查询流程。
+
+### 第三步：查询缓存
+
+Manager 调用 `ImageCache` 的缓存查询方法，**先查内存缓存，再查磁盘缓存**。
+
+内存缓存查询是同步的，因为 `NSCache` 的读取非常快。如果内存缓存命中，直接返回图片。
+
+如果内存缓存未命中，会进入磁盘缓存查询。磁盘 I/O 是耗时操作，所以这一步会在后台线程中异步执行。磁盘缓存的文件名是 `cacheKey` 经过 MD5 哈希后的字符串。
+
+如果磁盘缓存命中，会先将 Data 通过 `CacheSerializer` 反序列化为 UIImage，然后**写入内存缓存**以备下次快速读取，最后返回图片。
+
+### 第四步：网络下载
+
+如果内存和磁盘都没有缓存，Manager 会调用 `ImageDownloader` 开始下载。
+
+Downloader 会创建一个 `URLSessionDataTask` 并启动异步下载。在下载过程中，如果用户提供了 `progressBlock`，会定期回调下载进度。
+
+下载支持**取消机制**。当 Cell 滑出屏幕时，可以调用 `cancelDownloadTask()` 取消正在进行的下载，避免无效的资源消耗。
+
+### 第五步：图片处理（Processor）
+
+图片数据下载完成后，会交给 `ImageProcessor` 进行处理。`DefaultImageProcessor` 将 Data 转换为 UIImage。如果用户指定了其他 Processor（如 `DownsamplingImageProcessor`），会进一步对图片进行缩放、裁剪等操作。
+
+处理后的图片会被缓存，根据 `options` 的值决定是否同时缓存原始数据。
+
+### 第六步：缓存写入与显示
+
+处理完成后，Manager 会通过 `ImageCache` 将图片**同时存入内存缓存和磁盘缓存**。磁盘写入是异步操作，不会阻塞主线程。
+
+最后，图片在主线程被设置到 UIImageView 上，同时触发过渡动画（如果配置了 `.transition`），完成整个流程。
+
+
+## 六、各模块源码实现分析
+
+### 6.1 KingfisherManager：统一的调度中心
+
+`KingfisherManager` 是框架的核心调度类。它的 `retrieveImage` 方法是整个加载流程的入口，协调了缓存查询、网络下载、图片处理和回调分发。
+
+在 5.0 版本中，Kingfisher 引入了 `Result` 类型，所有回调都使用 `Result` 替代了之前的元组方式，提供了更现代的错误处理体验。同时 `KingfisherError` 变得更加详细和准确，包含了错误原因和必要的关联值，便于追踪问题。
+
+### 6.2 ImageCache：二级缓存与 LRU 淘汰策略
+
+`ImageCache` 是缓存模块的核心。5.0 版本将其完全重写，将内存缓存和磁盘缓存分离到独立的 `MemoryStorage` 和 `DiskStorage` 中。
+
+**内存缓存**基于 `NSCache` 实现，配合 LRU 淘汰策略。默认情况下，内存缓存最多使用设备内存的 25%。内存缓存会在特定时间间隔自动清理，以减少 App 其他部分的内存压力。
+
+**磁盘缓存**基于 `FileManager` 实现。默认情况下，磁盘缓存文件超过 7 天会被删除。磁盘缓存的写入和读取都在独立的 I/O 队列中异步执行。
+
+缓存查询时，`cacheKey` 默认就是 URL 的完整字符串。磁盘缓存的文件名是对 `cacheKey` 进行 MD5 哈希后得到的字符串，这既避免了文件系统对特殊字符的限制，也保证了同一个 URL 对应唯一的缓存文件。
+
+### 6.3 MemoryStorage 与 DiskStorage：命名空间下的存储后端
+
+`MemoryStorage` 和 `DiskStorage` 是 Kingfisher 5.0 引入的两个重要类型，它们被定义在各自的枚举命名空间中。
+
+`MemoryStorage.Backend` 是真正管理内存存储的类，内部使用 `NSCache` 并配合 LRU 策略。它支持设置 `totalCostLimit` 和 `countLimit`，精确控制内存使用。
+
+`DiskStorage.Backend` 管理磁盘存储，基于 `FileManager` 实现。它支持自定义缓存路径、过期清理和容量控制。磁盘清理策略是：先删除过期文件，如果空间仍不足，则按文件修改时间从旧到新删除。
+
+### 6.4 ImageDownloader：下载任务的管理
+
+`ImageDownloader` 是下载模块的核心，管理着 `URLSession` 和下载任务队列。
+
+下载任务支持**取消和复用**。当多个地方同时请求同一个 URL 时，Downloader 会复用同一个下载任务，避免重复的网络请求。当任务被取消时，对应的 `URLSessionDataTask` 会被中断，资源会被及时释放。
+
+在 5.0 版本中，修复了大量下载任务同时运行时可能导致的崩溃问题。所有数据接收操作现在都在非 UI 线程中正确执行。
+
+### 6.5 ImageProcessor：可插拔的图片处理管道
+
+`ImageProcessor` 是 Kingfisher 中一个非常灵活的设计。它定义了 `process(item:options:)` 方法和 `identifier` 属性。
+
+`ImageProcessItem` 是一个枚举类型，可以是 `image(UIImage)` 或 `data(Data)`。Processor 接收这两种类型的输入，输出处理后的 UIImage。
+
+Processor 的调用时机有几个：
+- 从网络下载图片成功后，将 Data 加工成 UIImage
+- 从 `ImageDataProvider` 获取数据后，将 Data 加工成 UIImage
+- 从磁盘缓存读取原始数据后，将 Data 反序列化为 UIImage 再加工
+
+`identifier` 属性在缓存时用于区分原始数据和处理后的数据——不同的 Processor 处理同一张图片会生成不同的缓存 Key。
+
+Kingfisher 提供了多种内置 Processor：`DefaultImageProcessor`、`DownsamplingImageProcessor`、`RoundCornerImageProcessor` 等。用户也可以自定义 Processor 来支持 WebP 等特殊格式。
+
+### 6.6 CacheSerializer：序列化与反序列化
+
+`CacheSerializer` 定义了图片序列化和反序列化的能力。
+
+它的调用时机有两个：
+- 需要写入磁盘缓存时，调用 `data(with:original:)` 将 UIImage 序列化为 Data
+- 从磁盘读取数据时，调用 `image(with:options:)` 将 Data 反序列化为 UIImage
+
+默认的 `DefaultCacheSerializer` 将 UIImage 转换为 PNG 或 JPEG 格式的 Data 写入磁盘。用户可以通过自定义 `CacheSerializer` 来支持 WebP 等特殊格式的序列化和反序列化。
+
+### 6.7 ImagePrefetcher：预加载机制
+
+`ImagePrefetcher` 提供了图片预加载功能。它可以预先下载一批图片，存入缓存，以便后续使用时直接从缓存读取。
+
+`start()` 方法开启预加载，`stop()` 方法停止预加载并取消所有未完成的下载任务。`maxConcurrentDownloads` 属性控制最大并发下载数。
+
+预加载功能在列表场景中非常有用——可以在 `willDisplay` 代理方法中预加载即将出现在屏幕上的图片，提升用户体验。
+
+
+## 七、版本演进与核心变化
+
+### 7.1 1.0 - 5.0：夯实基础（2015-2020）
+
+早期版本奠定了 Kingfisher 的技术基石，包括三级缓存架构（内存/磁盘/网络）和链式 API 设计。这一阶段的关键突破包括：内存缓存采用 LRU 淘汰策略、磁盘存储实现增量缓存与过期清理、网络层支持请求优先级和取消机制。
+
+### 7.2 5.0：Reborn（2018）
+
+Kingfisher 5.0 是一次彻底的重构。核心变化包括：
+
+- **Result 类型**：所有回调使用 `Result` 替代元组
+- **KingfisherError**：错误信息更加详细和准确
+- **缓存分离**：将内存缓存和磁盘缓存分离到独立的 `MemoryStorage` 和 `DiskStorage`
+- **缓存控制**：支持分别控制内存和磁盘的过期时间
+- **内存限制**：默认最多使用设备内存的 25%
+- **DownsamplingImageProcessor**：支持图片下采样
+- **ImageDataProvider**：支持从本地加载图片，不再局限于网络
+- **性能优化**：使用系统 CommonCrypto 计算缓存文件名，修复并发下载崩溃等问题
+
+### 7.3 6.0：SwiftUI 新纪元（2020）
+
+6.0 版本最大的变革是将 SwiftUI 支持整合到主框架，结束了 `KingfisherSwiftUI` 独立模块的时代。API 得到简化：统一使用 `import Kingfisher` 替代框架区分。链式语法在 UIKit 与 SwiftUI 间保持一致：
+
+```swift
+// UIKit
+imageView.kf.setImage(with: url)
+
+// SwiftUI
+KFImage(url)
+    .placeholder { ProgressView() }
+    .resizable()
+    .scaledToFit()
+```
+
+### 7.4 7.0：SwiftUI 成熟化（2021）
+
+7.0 版本彻底重写了 SwiftUI 支持，将 `@ObservedObject` 升级为 `@StateObject`，解决了 SwiftUI 视图刷新导致的图像闪烁问题。新增 `KFAnimatedImage` 组件，支持 GIF 播放控制与内存优化。平台支持扩展至 iOS 12+。
+
+### 7.5 8.0：并发革命（2024）
+
+8.0 版本实现了 API 的异步化转型，全面支持 Swift Concurrency。这是 Kingfisher 向现代 Swift 并发模型迈出的重要一步。
+
+
+## 八、与 SDWebImage 的对比
+
+Kingfisher 在设计上参考了 SDWebImage，但作为纯 Swift 实现，两者在多个维度上存在差异：
+
+**语言与生态**：Kingfisher 是纯 Swift 实现，对 Swift 项目极其友好。SDWebImage 基于 Objective-C，虽然可以在 Swift 中使用，但需要通过桥接文件。
+
+**命名空间设计**：Kingfisher 通过 `.kf` 命名空间避免污染系统类。SDWebImage 直接为 UIImageView 添加 `sd_` 前缀的方法。
+
+**SwiftUI 支持**：Kingfisher 从 6.0 开始原生支持 SwiftUI。SDWebImage 通过 `SDWebImageSwiftUI` 独立库提供支持。
+
+**缓存机制**：两者都采用内存+磁盘的二级缓存，但 Kingfisher 5.0 后将内存和磁盘存储完全分离，设计更加模块化。
+
+**图片处理**：Kingfisher 的 `ImageProcessor` 协议提供了灵活可插拔的图片处理管道。SDWebImage 通过 `SDImageTransformer` 实现类似功能。
+
+**API 风格**：Kingfisher 的链式 API 更符合 Swift 的语言习惯。SDWebImage 的 API 相对更传统。
+
+选择哪个框架，更多取决于项目需求：纯 Swift 项目优先考虑 Kingfisher，需要最大兼容性或维护 Objective-C 代码库则 SDWebImage 是更稳妥的选择。
+
+
+## 九、实现原理总结
+
+把上面所有的分析串起来，Kingfisher 的核心实现原理可以归纳为以下几点：
+
+**1. 命名空间驱动的 API 设计**
+
+通过 `KingfisherCompatible` 协议和 `KingfisherWrapper` 结构体，Kingfisher 为 UIKit/AppKit 类添加了 `.kf` 命名空间扩展。这种设计避免了 API 命名冲突，让功能归属更清晰。
+
+**2. 二级缓存架构（内存 + 磁盘）**
+
+内存缓存保证速度，磁盘缓存保证持久化。5.0 版本将两者彻底分离到独立的 Storage 中，配合 LRU 淘汰策略和过期清理机制，实现了高效的缓存管理。
+
+**3. 可插拔的图片处理管道**
+
+`ImageProcessor` 协议定义了图片加工能力。从网络下载的 Data 经过 Processor 处理后变成 UIImage 再缓存和显示。用户可以自定义 Processor 来支持 WebP 等特殊格式。
+
+**4. 序列化与反序列化的分离**
+
+`CacheSerializer` 协议定义了图片的序列化和反序列化能力。写入磁盘时序列化，读取磁盘时反序列化。这种分离让缓存格式的扩展变得简单。
+
+**5. 异步 I/O 与主线程安全**
+
+磁盘缓存的读写都在后台线程执行。图片下载和处理的回调也在合适的队列中分发，保证了主线程的流畅。
+
+**6. 取消机制与预加载**
+
+支持取消正在进行的下载任务，避免 Cell 复用时的资源浪费。`ImagePrefetcher` 支持预加载图片到缓存，提升用户体验。
+
+**7. 模块化与独立组件**
+
+Kingfisher 的下载器、缓存系统和图片处理器都是可以单独使用的。例如，可以在项目中单独使用 `ImageCache` 来实现数据缓存功能。
+
+
+Kingfisher 从 2015 年首次发布至今已有十年，经历了从 1.0 到 8.0 的多次重大迭代。它能在 Swift 社区获得如此广泛的认可——GitHub 上数万 Star、几乎成为 Swift 项目的标配依赖——靠的不仅仅是“能加载图片”这个基础功能，更是对 Swift 语言特性的深刻理解、对开发者体验的极致追求，以及持续十年的稳定维护。读它的源码，学到的不仅是图片加载怎么做，更是一种如何用 Swift 设计优雅、可扩展、模块化的开源库的思路。
