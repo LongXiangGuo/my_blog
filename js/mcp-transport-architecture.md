@@ -7,28 +7,38 @@
 
 ## 目录
 
-- [一、整体架构概览](#一整体架构概览)
-- [二、核心模块详解](#二核心模块详解)
-  - [2.1 index.js — 入口与 Server 编排](#21-indexjs--入口与-server-编排)
-  - [2.2 lib.js — 安全核心与文件操作](#22-libjs--安全核心与文件操作)
-  - [2.3 path-utils.js — 跨平台路径处理](#23-path-utilsjs--跨平台路径处理)
-  - [2.4 path-validation.js — 路径白名单引擎](#24-path-validationjs--路径白名单引擎)
-  - [2.5 roots-utils.js — MCP Roots 协议](#25-roots-utilsjs--mcp-roots-协议)
-- [三、Transport 传输层底层原理](#三transport-传输层底层原理)
-  - [3.1 Transport 接口抽象](#31-transport-接口抽象)
-  - [3.2 StdioServerTransport 实现](#32-stdioservertransport-实现)
-  - [3.3 ReadBuffer — 字节流到消息的转换引擎](#33-readbuffer--字节流到消息的转换引擎)
-  - [3.4 消息序列化格式](#34-消息序列化格式)
-  - [3.5 背压处理](#35-背压处理)
-- [四、Protocol 协议层实现](#四protocol-协议层实现)
-  - [4.1 connect() — 接管 Transport](#41-connect--接管-transport)
-  - [4.2 消息路由全链路](#42-消息路由全链路)
-  - [4.3 请求/响应匹配机制](#43-请求响应匹配机制)
-  - [4.4 超时与取消管理](#44-超时与取消管理)
-- [五、完整调用链](#五完整调用链)
-- [六、安全模型](#六安全模型)
-- [七、设计模式总结](#七设计模式总结)
-- [八、其他 Transport 实现对比](#八其他-transport-实现对比)
+- [MCP (Model Context Protocol) 底层实现原理深度剖析](#mcp-model-context-protocol-底层实现原理深度剖析)
+  - [目录](#目录)
+  - [一、整体架构概览](#一整体架构概览)
+  - [二、核心模块详解](#二核心模块详解)
+    - [2.1 index.js — 入口与 Server 编排](#21-indexjs--入口与-server-编排)
+    - [2.2 lib.js — 安全核心与文件操作](#22-libjs--安全核心与文件操作)
+    - [2.3 path-utils.js — 跨平台路径处理](#23-path-utilsjs--跨平台路径处理)
+    - [2.4 path-validation.js — 路径白名单引擎](#24-path-validationjs--路径白名单引擎)
+    - [2.5 roots-utils.js — MCP Roots 协议](#25-roots-utilsjs--mcp-roots-协议)
+  - [三、Transport 传输层底层原理](#三transport-传输层底层原理)
+    - [3.1 Transport 接口抽象](#31-transport-接口抽象)
+    - [3.2 StdioServerTransport 实现](#32-stdioservertransport-实现)
+      - [`start()` — 开启数据流](#start--开启数据流)
+      - [`send()` — 写入 stdout（含背压处理）](#send--写入-stdout含背压处理)
+      - [`close()` — 优雅关闭](#close--优雅关闭)
+    - [3.3 ReadBuffer — 字节流到消息的转换引擎](#33-readbuffer--字节流到消息的转换引擎)
+    - [3.4 消息序列化格式](#34-消息序列化格式)
+    - [3.5 背压处理](#35-背压处理)
+  - [四、Protocol 协议层实现](#四protocol-协议层实现)
+    - [4.1 connect() — 接管 Transport](#41-connect--接管-transport)
+    - [4.2 消息路由全链路](#42-消息路由全链路)
+    - [4.3 请求/响应匹配机制](#43-请求响应匹配机制)
+    - [4.4 超时与取消管理](#44-超时与取消管理)
+  - [五、完整调用链](#五完整调用链)
+  - [六、安全模型](#六安全模型)
+  - [七、设计模式总结](#七设计模式总结)
+  - [八、其他 Transport 实现对比](#八其他-transport-实现对比)
+  - [附录：关键数据结构](#附录关键数据结构)
+    - [JSON-RPC 请求消息](#json-rpc-请求消息)
+    - [JSON-RPC 响应消息](#json-rpc-响应消息)
+    - [JSON-RPC 通知消息（无 id，无响应）](#json-rpc-通知消息无-id无响应)
+    - [JSON-RPC 错误响应](#json-rpc-错误响应)
 
 ---
 
@@ -97,31 +107,31 @@ graph TB
 
 **职责**：整个程序的编排层。
 
-| 职责 | 实现 |
-|------|------|
-| 命令行解析 | 接收多个 `allowed-directory` 参数，resolve + realpath 后存入全局 `allowedDirectories` |
-| Server 初始化 | `new McpServer({ name: "secure-filesystem-server", version: "0.2.0" })` |
-| Tool 注册 | 注册 12 个 tools，每个包含 `title`, `description`, `inputSchema`(Zod), `outputSchema`, `annotations`, `handler` |
-| Roots 协议 | 监听 `RootsListChangedNotification`，动态更新允许目录 |
-| 启动 | `StdioServerTransport` + `server.connect(transport)` |
+| 职责          | 实现                                                                                                            |
+| ------------- | --------------------------------------------------------------------------------------------------------------- |
+| 命令行解析    | 接收多个 `allowed-directory` 参数，resolve + realpath 后存入全局 `allowedDirectories`                           |
+| Server 初始化 | `new McpServer({ name: "secure-filesystem-server", version: "0.2.0" })`                                         |
+| Tool 注册     | 注册 12 个 tools，每个包含 `title`, `description`, `inputSchema`(Zod), `outputSchema`, `annotations`, `handler` |
+| Roots 协议    | 监听 `RootsListChangedNotification`，动态更新允许目录                                                           |
+| 启动          | `StdioServerTransport` + `server.connect(transport)`                                                            |
 
 **注册的 12 个 Tools：**
 
-| Tool | 类型 | 核心能力 |
-|------|------|----------|
-| `read_text_file` | 读 | 读取文本文件，支持 head/tail |
-| `read_media_file` | 读 | 读取图片/音频，返回 base64 + MIME |
-| `read_multiple_files` | 读 | 并发读取多个文件 |
-| `write_file` | 写 | 创建/覆盖文件（原子写入） |
-| `edit_file` | 写 | 行级编辑 + git-style diff |
-| `create_directory` | 写 | 递归创建目录 |
-| `list_directory` | 读 | 列出目录内容 |
-| `list_directory_with_sizes` | 读 | 列出目录含文件大小 |
-| `directory_tree` | 读 | 递归树形结构 JSON |
-| `move_file` | 写 | 移动/重命名 |
-| `search_files` | 读 | glob 模式递归搜索 |
-| `get_file_info` | 读 | 文件元数据 |
-| `list_allowed_directories` | 读 | 列出允许访问的目录 |
+| Tool                        | 类型 | 核心能力                          |
+| --------------------------- | ---- | --------------------------------- |
+| `read_text_file`            | 读   | 读取文本文件，支持 head/tail      |
+| `read_media_file`           | 读   | 读取图片/音频，返回 base64 + MIME |
+| `read_multiple_files`       | 读   | 并发读取多个文件                  |
+| `write_file`                | 写   | 创建/覆盖文件（原子写入）         |
+| `edit_file`                 | 写   | 行级编辑 + git-style diff         |
+| `create_directory`          | 写   | 递归创建目录                      |
+| `list_directory`            | 读   | 列出目录内容                      |
+| `list_directory_with_sizes` | 读   | 列出目录含文件大小                |
+| `directory_tree`            | 读   | 递归树形结构 JSON                 |
+| `move_file`                 | 写   | 移动/重命名                       |
+| `search_files`              | 读   | glob 模式递归搜索                 |
+| `get_file_info`             | 读   | 文件元数据                        |
+| `list_allowed_directories`  | 读   | 列出允许访问的目录                |
 
 ---
 
@@ -671,18 +681,18 @@ Layer 4: 路径规范化 — 消除路径表示歧义
 
 ## 七、设计模式总结
 
-| 模式 | 体现 | 说明 |
-|------|------|------|
-| **Transport-agnostic Server** | `McpServer` 不关心传输层，通过 `connect(transport)` 注入 | 策略模式 |
-| **Tool Registry 模式** | 通过 `server.registerTool()` 注册，每个 tool = `{schema, handler, annotations}` | 命令模式 |
-| **Schema-driven** | 所有输入/输出由 Zod schema 定义，自动校验和生成 JSON Schema | 类型驱动 |
-| **Annotations 元编程** | `readOnlyHint`, `idempotentHint`, `destructiveHint` 让 Client 做智能决策 | 声明式 |
-| **Callback Injection** | Protocol 接管 Transport 的 `onmessage/onerror/onclose` | 控制反转 |
-| **Promise Map 匹配** | `Map<id, {resolve, reject}>` 基于自增 ID 精确匹配请求/响应 | 异步关联 |
-| **Type-narrowing Router** | `isJSONRPCRequest/Response/Notification` 三分消息 | 类型守卫 |
-| **Incremental Parsing** | ReadBuffer 不假设 chunk 边界，支持消息跨 chunk | 流式处理 |
-| **Backpressure** | `stream.write()` + `drain` 事件防止内存溢出 | 生产者-消费者 |
-| **纵深防御** | 4 层安全防线 | 安全模式 |
+| 模式                          | 体现                                                                            | 说明          |
+| ----------------------------- | ------------------------------------------------------------------------------- | ------------- |
+| **Transport-agnostic Server** | `McpServer` 不关心传输层，通过 `connect(transport)` 注入                        | 策略模式      |
+| **Tool Registry 模式**        | 通过 `server.registerTool()` 注册，每个 tool = `{schema, handler, annotations}` | 命令模式      |
+| **Schema-driven**             | 所有输入/输出由 Zod schema 定义，自动校验和生成 JSON Schema                     | 类型驱动      |
+| **Annotations 元编程**        | `readOnlyHint`, `idempotentHint`, `destructiveHint` 让 Client 做智能决策        | 声明式        |
+| **Callback Injection**        | Protocol 接管 Transport 的 `onmessage/onerror/onclose`                          | 控制反转      |
+| **Promise Map 匹配**          | `Map<id, {resolve, reject}>` 基于自增 ID 精确匹配请求/响应                      | 异步关联      |
+| **Type-narrowing Router**     | `isJSONRPCRequest/Response/Notification` 三分消息                               | 类型守卫      |
+| **Incremental Parsing**       | ReadBuffer 不假设 chunk 边界，支持消息跨 chunk                                  | 流式处理      |
+| **Backpressure**              | `stream.write()` + `drain` 事件防止内存溢出                                     | 生产者-消费者 |
+| **纵深防御**                  | 4 层安全防线                                                                    | 安全模式      |
 
 ---
 
@@ -690,11 +700,11 @@ Layer 4: 路径规范化 — 消除路径表示歧义
 
 SDK 提供了三种 Transport，都遵循同一个 `Transport` 接口：
 
-| Transport | 物理层 | 适用场景 | 特点 |
-|---|---|---|---|
-| `StdioServerTransport` | stdin/stdout 管道 | 本地进程通信 | 最简单，零网络开销，line-delimited JSON-RPC |
-| `SSEServerTransport` | HTTP SSE + POST | HTTP 服务（Web/云端） | 服务端推送 + 客户端 POST，需独立端口 |
-| `StreamableHTTPServerTransport` | HTTP Streaming | 需要会话恢复的远程场景 | 支持断线重连（resumption token）、事件持久化 |
+| Transport                       | 物理层            | 适用场景               | 特点                                         |
+| ------------------------------- | ----------------- | ---------------------- | -------------------------------------------- |
+| `StdioServerTransport`          | stdin/stdout 管道 | 本地进程通信           | 最简单，零网络开销，line-delimited JSON-RPC  |
+| `SSEServerTransport`            | HTTP SSE + POST   | HTTP 服务（Web/云端）  | 服务端推送 + 客户端 POST，需独立端口         |
+| `StreamableHTTPServerTransport` | HTTP Streaming    | 需要会话恢复的远程场景 | 支持断线重连（resumption token）、事件持久化 |
 
 三者实现相同的 `start/send/close` + 三个回调，Protocol 层完全无感知底层差异。这是经典的**策略模式**应用。
 
