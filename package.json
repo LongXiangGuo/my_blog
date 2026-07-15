@@ -5,6 +5,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "docs:sidebar": "node scripts/generate-sidebar.mjs",
+    "docs:readme-toc": "node scripts/generate-readme-toc.mjs",
     "predocs:dev": "npm run docs:sidebar",
     "docs:dev": "vitepress dev",
     "predocs:build": "npm run docs:sidebar",

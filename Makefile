@@ -1,4 +1,4 @@
-.PHONY: help sidebar dev build preview clean
+.PHONY: help sidebar readme-toc dev build preview clean
 
 # ─── 默认目标 ───────────────────────────────────────────────
 .DEFAULT_GOAL := help
@@ -11,8 +11,9 @@ C_CYAN    := \033[36m
 C_GREEN   := \033[32m
 
 # ─── 路径 ───────────────────────────────────────────────────
-SIDEBAR_SCRIPT := scripts/generate-sidebar.mjs
-SIDEBAR_OUTPUT := .vitepress/sidebar.generated.mts
+SIDEBAR_SCRIPT    := scripts/generate-sidebar.mjs
+README_TOC_SCRIPT := scripts/generate-readme-toc.mjs
+SIDEBAR_OUTPUT    := .vitepress/sidebar.generated.mts
 
 # ═════════════════════════════════════════════════════════════
 #  帮助文档
@@ -25,6 +26,10 @@ help:
 	@echo "  $(C_CYAN)make sidebar$(C_RESET)    生成 VitePress 侧边栏配置"
 	@echo "                     扫描全部 markdown 文件,按目录分组,"
 	@echo "                     输出到 $(SIDEBAR_OUTPUT)"
+	@echo ""
+	@echo "  $(C_CYAN)make readme-toc$(C_RESET)  生成 README.md 目录树"
+	@echo "                     递归扫描所有 markdown 文件,"
+	@echo "                     插入到 README.md ## Contents 区域"
 	@echo ""
 	@echo "  $(C_CYAN)make dev$(C_RESET)        启动开发服务器 (自动先生成侧边栏)"
 	@echo "                     → 等价: sidebar + vitepress dev"
@@ -47,6 +52,13 @@ help:
 sidebar:
 	@echo "$(C_GREEN)🔍 扫描 markdown 文件并生成侧边栏...$(C_RESET)"
 	@node $(SIDEBAR_SCRIPT)
+
+# ═════════════════════════════════════════════════════════════
+#  生成 README 目录树
+# ═════════════════════════════════════════════════════════════
+readme-toc:
+	@echo "$(C_GREEN)📋 扫描 markdown 文件并更新 README.md 目录树...$(C_RESET)"
+	@node $(README_TOC_SCRIPT)
 
 # ═════════════════════════════════════════════════════════════
 #  开发服务器（依赖侧边栏）
