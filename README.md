@@ -49,6 +49,7 @@ npm run docs:sidebar
     - [Gcd](/ios/core/6.gcd)
     - [ASLR](/ios/core/7.ASLR)
     - [Crash Collect](/ios/core/8.crash_collect)
+    - [语音降噪](/ios/core/9.%E8%AF%AD%E9%9F%B3%E9%99%8D%E5%99%AA)
   - 📁 **Functions**
     - [Network Alamofire](/ios/functions/1.network-alamofire)
     - [Av Foundation](/ios/functions/10.av_foundation)
@@ -56,6 +57,7 @@ npm run docs:sidebar
     - [Animations](/ios/functions/12.animations)
     - [Accessory Setupkit](/ios/functions/13.accessory_setupkit)
     - [Ffmpeg](/ios/functions/14.ffmpeg)
+    - [Swift Data](/ios/functions/15.swift_data)
     - [Network Moya](/ios/functions/2.network-moya)
     - [Image Kingfisher](/ios/functions/3.image-kingfisher)
     - [Realm](/ios/functions/4.realm)
@@ -76,14 +78,19 @@ npm run docs:sidebar
       - [MGU](/ios/hardware/CC/MGU)
       - [SDIP](/ios/hardware/CC/SDIP)
       - [VehicleInfo](/ios/hardware/CC/VehicleInfo)
+    - 📁 **DK**
+      - [Digtal Key基本流程](/ios/hardware/DK/0.digtal_key%E5%9F%BA%E6%9C%AC%E6%B5%81%E7%A8%8B)
+      - [DK简介](/ios/hardware/DK/1.DK%E7%AE%80%E4%BB%8B)
+      - [CCC规范](/ios/hardware/DK/2.CCC%E8%A7%84%E8%8C%83)
+      - [ICCE规范](/ios/hardware/DK/3.ICCE%E8%A7%84%E8%8C%83)
     - 📁 **EA**
       - [Iap2](/ios/hardware/EA/iap2)
+    - 📁 **NFC**
+      - [HCE](/ios/hardware/NFC/HCE)
     - [Applet](/ios/hardware/applet)
-    - [Card Type](/ios/hardware/card_type)
     - [Carplay](/ios/hardware/Carplay)
     - [CCC](/ios/hardware/CCC)
-    - [Digtal Key](/ios/hardware/digtal_key)
-    - [SE存储区域](/ios/hardware/SE%E5%AD%98%E5%82%A8%E5%8C%BA%E5%9F%9F)
+    - [SE](/ios/hardware/SE)
 
 - **Flutter**
   - [Flutter Bloc](/flutter/1.flutter_bloc)
