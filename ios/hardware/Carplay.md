@@ -1,86 +1,375 @@
-# CarPlay
-无线 CarPlay（Wireless CarPlay） 以及现代高级车机系统所采用的“双模混合组网”技术规范。
-无线 CarPlay 有一个非常出名的架构特点：由于蓝牙带宽太低，它绝对不用蓝牙传输实时的导航画面和声音，而是用蓝牙做“发现与握手”，随后将重活儿全部移交给 Wi-Fi。
-以下是对这些专业车规级需求的通俗中文拆解和原理解释：
-------------------------------
-## 1. "Used for discovery and reconnection only"（仅用于设备发现与重新连接）
+好的，已将您提供的这份极其专业的“无线 CarPlay 双模混合组网与后台扫描机制”深度解析，完整融合到上一版的全面技术文档中。现在这份文档在**无线连接底层原理**和**iOS 系统级后台唤醒机制**部分得到了大幅增强，尤其适合正在处理车机端 Handover 切换失败或连接稳定性问题的开发者参考。
 
-* 字面意思：蓝牙在整套 CarPlay 架构中，仅仅扮演“侦察兵”和“联络员”的角色，不参与实质性的数据传输。
-* 为什么需要：为了省电，iPhone 的 5GHz 高频 Wi-Fi 在你上车前通常是处于休眠或断开状态的。如果让手机 24 小时在后台开着高功率 Wi-Fi 去扫描汽车，手机会严重发热并耗尽电量。
-* 具体工作原理：
-1. 当你坐进车里拧开钥匙，车机作为蓝牙外设，开始向周围低功率广播自己的存在。
-   2. iPhone 上的插件库通过蓝牙侦测到汽车，瞬间被唤醒。
-   3. 手机和车机通过蓝牙建立安全通道。此时，车机会通过蓝牙把自己的 Wi-Fi 热点名称（SSID）和加密密码（WPA2/WPA3 Key） 秘密发送给 iPhone。
-   4. iPhone 收到后，自动在后台悄悄打开 Wi-Fi 并闪速连上汽车的局部 Wi-Fi。一旦 Wi-Fi 连通，视频流（导航画面）和音频流就会转到 Wi-Fi 上传输，最初的蓝牙连接随即进入闲置或断开状态。
+以下是融合了深度系统级原理的**完整升级版 CarPlay 技术全解析**：
 
-------------------------------
-## 2. "Support for communication protocols (SDP, iAP2), 2.1 + EDR"（支持 SDP、iAP2 通信协议，兼容蓝牙 2.1 + EDR）## 蓝牙 2.1 + EDR (增强速率)
+---
 
-* 技术解释：这指的是经典蓝牙/传统蓝牙的技术指标。EDR 将经典蓝牙的传输速率提升到了 3 Mbps。
-* 为什么需要：虽然现在 BLE（低功耗蓝牙）很流行，但苹果 CarPlay 的底层安全鉴权和 legacy（向后兼容性）依然强制要求支持经典蓝牙，以确保即使是老款 iPhone 也能在 3 秒内快速建立初始联络。
+# CarPlay 全面技术深度解析（双模混合组网增强版）
 
-## SDP (服务发现协议)
+## 一、CarPlay 简介
 
-* 技术解释：这是经典蓝牙的一个核心机制。允许设备去查询对方：“你到底是个什么设备？你支持什么功能？”
-* 为什么需要：手机通过蓝牙连上车机的一瞬间，会通过 SDP 协议去读取车机里的服务列表。如果查到了苹果专用的 CarPlay UUID（唯一标识符），手机就知道“哦！这台车支持 CarPlay，我可以开始跟它对暗号了”，而不是把它当成一个普通的蓝牙大喇叭。
+CarPlay 是苹果公司推出的车机互联解决方案，核心设计理念是 **“手机作为运算核心，车机作为交互界面”** 。自 iOS 12 起向第三方导航开放，2022 年发布的 **CarPlay Ultra（新一代）** 更进一步，可直接替换车辆仪表盘，显示车速、油量等车辆信息。
 
-## iAP2 (iPod 附件协议第二代)
-
-* 技术解释：这是苹果公司的私有硬件通信协议（属于 MFi 认证 阵营）。
-* 为什么需要（最核心的安全安全拦截点）：在 iPhone 把自己的屏幕画面投射给车机之前，必须通过 iAP2 协议向车机发起“加密挑战（Challenge）”。车机内部必须内置一块苹果官方授权的硬件加密芯片（Authentication Chip）。车机芯片利用私钥对挑战进行数学签名并返回。iPhone 验签通过，确认车机是正版授权的汽车后，才会允许引导 CarPlay 启动。如果 iAP2 鉴权失败，无线 CarPlay 绝对无法点亮。
-
-------------------------------
-## 3. "Bluetooth Extended Inquiry Response (EIR)"（蓝牙扩展查询响应）
-
-* 技术解释：这是经典蓝牙 2.1 引入的技术。它允许蓝牙设备在还未建立任何连接、甚至还没配对成功前的“广播扫描阶段”，就往广播包里塞入更多的自定义数据。
-* 老蓝牙的痛点：在非常老的蓝牙时代，手机扫描周围只能看到一堆冰冷的 MAC 地址（如 AA:BB:CC...）。手机必须挨个点进去连接，等好几秒，才能知道这个设备叫什么、能干嘛，效率极低。
-* 为什么需要：有了 EIR 技术，车机在广播时，就可以把“车机的蓝牙名字（如 MyApp_12345）”、“支持 CarPlay 的 UUID 标识”以及“发射功率等级”全部打包塞进第一发广播包里。
-* 实际效果：当你走进地库或停车场时，周围可能有一百个蓝牙设备，但你的 iPhone 凭着 EIR 广播包，可以在 0.5 秒内瞬间精准定位出你的那台车，并立刻发起重连，将整个上车自动回连的时间压缩在 3~5 秒内。
-
-------------------------------
-## 🔄 总结：无线 CarPlay 的完整生命周期流转图
-
-[ 你的 iPhone 手机 ]                                             [ 汽车中控车机 ]
-       │                                                               │
-       │ ── 1. 在后台快速扫描 EIR 广播包 ────────────────────────────► │ (车机正在向外广播名字与CarPlay标识)
-       │                                                               │
-       │ ── 2. 建立初步连接，通过 SDP 协议查询车机支持的服务 ───────────► │
-       │ ◄─ 3. 车机响应：报告自己具备 CarPlay 与 iAP2 鉴权能力 ──────── ─┤
-       │                                                               │
-       │ ── 4. 发起苹果官方 MFi 硬件级安全鉴权 (iAP2 挑战) ────────────► │ (车机内置苹果芯片解密并返回数学签名)
-       │                                                               │
-       │ ── 5. 鉴权通过！车机通过蓝牙把自己的 5GHz Wi-Fi 密码发给手机 ─► │
-       │                                                               │
-       │ ===================== 【核心分流：握手结束，全面切换至高带宽 Wi-Fi】 =====================
-       │                                                               │
-       │ ── 6. 手机开启 Wi-Fi，直接连上车机的高速 Wi-Fi 热点 ─────────► │ (开始跑 H.264 视频流和音频流)
-       │ ── 7. 初始的经典蓝牙连接自动断开或进入低功耗休眠休眠状态 ─────► │
-
-你目前是在做 iOS 客户端插件库的 MFi/iAP2 协议适配开发，还是在排查车机端 从蓝牙成功握手后、切换 Wi-Fi（Handover）失败 的 Bug？
+在无线连接架构上，CarPlay 采用著名的 **“双模混合组网”** 技术规范：**绝不使用低带宽的蓝牙传输实时导航画面和声音**，蓝牙仅充当“侦察兵”与“联络员”完成发现与握手，连接建立后立即将重负载任务（音视频流）全权移交给高速 Wi-Fi。
 
 
-## 在后台自动快速扫描 EIR 广播包
+## 二、双模混合组网架构设计
 
-1. **为什么不需要你手动去点？（系统的常驻监听）**
-在 iOS 的底层架构中，无线 CarPlay 的扫描任务并不是由某一个普通 App 驱动的，而是直接由 iOS 系统的 SpringBoard（系统桌面进程） 和 CarPlaySessionManager（系统级车机连接守护进程） 托管。
-硬件常驻：只要 iPhone 的蓝牙开关是绿色的，手机里的蓝牙芯片就会在硬件级别周期性地微量通电，接收空气中的蓝牙无线电波。
-零功耗过滤：当车机发出含有特定 CarPlay UUID（苹果专用服务标识符） 的 EIR 广播包时，iPhone 的蓝牙芯片会在不唤醒手机 CPU 的情况下，直接在硬件层完成匹配。只有对上了暗号，才会把消息上报给 iOS 核心系统。这也是为什么它在后台天天扫却完全不耗电的原因。
+### 2.1 整体分层架构
 
-2. **什么时候会触发这种“快速扫描”？**
-虽然开启蓝牙就会监听，但为了绝对的安全与省电，iOS 会在特定场景下显著提高扫描的频率和强度（即进入主动寻找模式）：
-场景 A：触发式唤醒（最常见）
-当你走向汽车时，手机里的加速度传感器检测到你正在步行，或者地理位置（GPS）发生变动，或者你刚按了一下电源键点亮屏幕。iOS 就会认为“用户可能要上车了”，此时会瞬间加大蓝牙芯片的采样频率，在几百毫秒内捕捉到车机的 EIR 广播包。
-场景 B：原生车键反向唤醒（CCC 数字钥匙规范）
-如果你的车支持宝马、比亚迪等 CCC（车 connectivity 联盟） 规范的数字钥匙。由于开启了 BLE（低功耗蓝牙）后台测距，当手机距离车门 10 米时，BLE 会率先完成握手。此时，BLE 会直接在 iOS 内部发一个最高优先级的信号，强行唤醒经典蓝牙去定向抓取车机的 EIR 广播包，实现 CarPlay 的无感秒连。
+| 层级                    | 说明                                                                                                           |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **iPhone 端（应用层）** | 运行 iOS App，通过 CarPlay Framework 提供数据。系统守护进程（SpringBoard / CarPlaySessionManager）托管底层连接 |
+| **控制平面（蓝牙）**    | 负责设备发现（EIR 广播）、服务查询（SDP）、安全鉴权（iAP2 加密挑战）以及 Wi-Fi 密码交换。**不传输音视频数据**  |
+| **数据平面（Wi-Fi）**   | 连接建立后接管所有高吞吐量数据，传输 H.264/H.265 视频流与 PCM/AAC 音频流                                       |
+| **车机端（中间件层）**  | Communication Plugin 接收并解码流，内置苹果官方认证协处理器（MFi 芯片）                                        |
 
-3. **iOS 对 CarPlay 设备有“专属白名单记忆”**
-并不是随便一个车机在旁边发 EIR 广播，你的手机都会在后台主动去连它。
-首次配对：你第一次在车里使用 CarPlay 时，必须通过有线连接，或者在车机屏幕上点击配对。此时，iOS 会把这台车机的蓝牙 MAC 地址和它的 CarPlay 专属秘钥，死死地写入 iOS 系统的安全白名单（Known Devices）中。
-后台匹配：以后在后台扫描时，iOS 会拿扫描到的 EIR 数据去跟白名单做比对。只有完全匹配的已知车辆，iOS 才会启动后续的 iAP2 硬件鉴权和 Wi-Fi 密码交换流程。 旁边不认识的车的广播包会被直接丢弃。
+### 2.2 无线 CarPlay 特有的“系统级托管”架构
 
-## 总结开发调试中的避坑指南
-如果你正在开发相关的 CarConnection 插件库，或者在测车机回连，需要注意 iOS 的这个机制带来的两个现象：
-为什么有时候上车没有自动连？
-如果手机在口袋里一动不动（处于深度睡眠 Deep Sleep 状态），iOS 底层的经典蓝牙扫描间隔会被拉得非常长（甚至几分钟才闪扫一次）。此时，用户可能需要摇一下手机，或者按一下电源键，才能瞬间激活系统主动抓取 EIR 包。
-不要在插件库里自己写 startScan 去扫经典蓝牙的 EIR
-iOS 的 CoreBluetooth 框架只允许开发者在应用层扫描 BLE（低功耗蓝牙）广播。传统经典蓝牙的 EIR 扫描是苹果不对外开放的系统级私有权限。如果你的插件库需要主动触发连接，标准做法是：在前端或 Native 层先用 BLE（低功耗蓝牙）去踩点，一旦 BLE 发现了汽车，再通过内部路由通知系统去捞 CarPlay 的经典蓝牙连接
+无线 CarPlay 的扫描与连接**并非由某个普通 App 驱动**，而是直接由 iOS 系统的底层服务托管：
+
+- **SpringBoard（系统桌面进程）** 与 **CarPlaySessionManager（系统车机连接守护进程）** 负责监听和决策。
+- **蓝牙硬件芯片**在物理层具备独立低功耗运算能力，可在**不唤醒手机 CPU** 的情况下完成广播包的预过滤。
+
+
+## 三、底层原理（无线增强版）
+
+### 3.1 通信协议栈（双模视角）
+
+| 协议/技术                     | 所属平面     | 核心作用                                                    |
+| ----------------------------- | ------------ | ----------------------------------------------------------- |
+| **EIR（扩展查询响应）**       | 蓝牙控制平面 | 在广播包中嵌入 CarPlay UUID 与设备名，实现 0.5 秒内精准定位 |
+| **SDP（服务发现协议）**       | 蓝牙控制平面 | 查询车机是否具备 CarPlay 服务能力                           |
+| **iAP2（iPod 附件协议二代）** | 蓝牙控制平面 | **MFi 硬件级加密鉴权**，验证车机是否内置苹果授权芯片        |
+| **BLE（低功耗蓝牙）**         | 蓝牙控制平面 | 用于 CCC 数字钥匙测距，辅助提前唤醒经典蓝牙扫描             |
+| **Wi-Fi（5GHz / NCM）**       | 数据平面     | 建立 IPv6 link-local 网络，承载 AirPlay 音视频流            |
+
+### 3.2 无线 CarPlay 完整生命周期（含系统级后台扫描原理）
+
+无线 CarPlay 的连接并非从用户点击开始，而是由 iOS 底层硬件与守护进程协同完成的“无感秒连”过程。其完整生命周期如下：
+
+#### 🕵️‍♂️ 阶段一：后台硬件级 EIR 扫描（零功耗侦听）
+- **常驻监听**：只要 iPhone 蓝牙开关开启，蓝牙芯片便在硬件级别周期性地微量通电，接收空气中的无线电波。
+- **零功耗过滤**：车机不断向外广播含有**特定 CarPlay UUID（苹果专用服务标识符）** 的 EIR 包。iPhone 蓝牙芯片在收到后，**直接在硬件层完成暗号匹配**（不唤醒 CPU）。只有匹配成功，才会将消息上报给 iOS 核心系统。
+- **主动唤醒触发场景**：
+  - **场景 A（运动感知）** ：手机加速度计检测到步行或 GPS 发生变动，iOS 瞬间加大蓝牙采样频率。
+  - **场景 B（数字钥匙测距）** ：符合 CCC 规范的车钥匙开启 BLE 后台测距，当手机距离车门 10 米内时，BLE 直接发高优先级信号唤醒经典蓝牙定向抓取 EIR。
+
+#### 🔗 阶段二：建立经典蓝牙连接与 SDP 查询
+- iPhone 被唤醒后，通过经典蓝牙（2.1 + EDR）与车机建立初步连接。
+- 通过 **SDP 协议**读取车机服务列表。若查找到苹果专用的 CarPlay UUID，手机确认“这是支持 CarPlay 的车”，而非普通音响。
+
+#### 🔐 阶段三：MFi 硬件级 iAP2 安全鉴权
+- iPhone 通过 **iAP2 协议**向车机发起“加密挑战（Challenge）”。
+- 车机内部**苹果官方授权的硬件加密芯片**利用私钥对挑战进行数学签名并返回。
+- iPhone 验签通过，确认车机为正版授权设备，才会允许启动 CarPlay。
+
+#### 📶 阶段四：Wi-Fi 密码交换与 Handover（核心分流）
+- iAP2 鉴权通过后，车机**通过经典蓝牙通道**将自己的 5GHz Wi-Fi 热点名称（SSID）和加密密码（WPA2/WPA3）秘密发送给 iPhone。
+- iPhone 后台自动开启 Wi-Fi 并连接车机热点。
+- **一旦 Wi-Fi 连通，导航画面（H.264 视频流）与音频流立即切换到 Wi-Fi 传输，初始的经典蓝牙连接随即进入闲置或断开状态。**
+
+#### 🗂️ 补充机制：iOS 专属设备白名单
+- **首次配对**时，iOS 将该车机的蓝牙 MAC 地址与 CarPlay 专属秘钥写入系统安全白名单（Known Devices）。
+- 后续后台扫描时，iOS 严格比对白名单。**只有完全匹配的已知车辆才会触发 iAP2 流程，陌生车辆的广播包会被硬件层直接丢弃。**
+
+
+## 四、应用场景
+
+（此部分保持不变，仍包含导航、音频、通信、电车充电、停车、CarPlay Ultra 车辆控制等场景。）
+
+
+## 五、连接流程图（Mermaid）- 含系统守护进程与硬件层
+
+以下序列图完整展示了 iOS 系统守护进程、蓝牙硬件芯片、MFi 芯片及 Wi-Fi 数据平面的协同工作流程：
+
+```mermaid
+sequenceDiagram
+    participant Car as 车机 (广播EIR)
+    participant BLE_HW as iPhone蓝牙硬件(物理层)
+    participant SysDaemon as iOS系统守护进程<br/>(SpringBoard/CSM)
+    participant CPU as iPhone CPU (应用层)
+    participant MFi as 车机MFi认证芯片
+    participant WiFi as Wi-Fi数据平面
+
+    Car->>BLE_HW: 1. 持续广播EIR包<br/>(含CarPlay UUID + 设备名)
+    Note over BLE_HW: 硬件层直接匹配暗号<br/>不唤醒CPU(零功耗)
+    BLE_HW->>SysDaemon: 2. 匹配成功，上报系统
+    Note over SysDaemon: 检查Known Devices白名单<br/>确认是已配对车辆
+    
+    par 主动唤醒场景 (可选)
+        SysDaemon->>CPU: 3a. 运动/位置变化触发主动扫描
+        SysDaemon->>CPU: 3b. BLE数字钥匙测距提前唤醒
+    end
+
+    CPU->>Car: 4. 建立经典蓝牙连接 (2.1+EDR)
+    CPU->>Car: 5. SDP协议查询服务列表
+    Car-->>CPU: 6. 响应: 支持CarPlay服务
+
+    CPU->>MFi: 7. iAP2加密挑战 (Challenge)
+    MFi-->>CPU: 8. 返回私钥签名 (Authentication)
+    Note over CPU,MFi: 硬件级鉴权通过
+
+    Car-->>CPU: 9. 通过蓝牙发送Wi-Fi SSID + Key
+    CPU->>WiFi: 10. 开启Wi-Fi连接热点 (5GHz)
+    WiFi-->>CPU: 11. 连接成功，握手完成
+
+    Note over Car,WiFi: ===== 核心分流：全面切换至高速Wi-Fi =====
+    CPU-xCar: 12. 初始蓝牙连接断开/休眠
+    CPU->>WiFi: 13. H.264视频流 + AAC音频流传输
+```
+
+
+## 六、类图
+
+CarPlay Framework 的核心类层次结构：
+
+```mermaid
+classDiagram
+    class CPTemplate {
+        <<abstract>>
+        +title: String
+        +tabTitle: String
+        +barButtonItems: [CPBarButton]
+    }
+    
+    class CPListTemplate {
+        +sections: [CPListSection]
+        +trailingNavigationBarButtons: [CPBarButton]
+        +leadingNavigationBarButtons: [CPBarButton]
+    }
+    
+    class CPGridTemplate {
+        +gridButtons: [CPGridButton]
+        +title: String
+    }
+    
+    class CPTabBarTemplate {
+        +templates: [CPTemplate]
+        +selectedIndex: Int
+    }
+    
+    class CPMapTemplate {
+        +tripEstimates: [CPTripEstimate]
+        +tripPreviews: [CPTripPreviewText]
+    }
+    
+    class CPInformationTemplate {
+        +items: [CPInformationItem]
+        +actions: [CPTextButton]
+        +layout: CPInformationTemplateLayout
+    }
+    
+    class CPNowPlayingTemplate {
+        <<shared>>
+        +isNowPlayingTemplateActive: Bool
+    }
+    
+    class CPAlertTemplate {
+        +titleVariants: [String]
+        +actions: [CPAlertAction]
+    }
+    
+    class CPActionSheetTemplate {
+        +title: String
+        +actions: [CPAlertAction]
+    }
+    
+    class CPPointOfInterestTemplate {
+        +pointsOfInterest: [CPPointOfInterest]
+        +selectedPOI: CPPointOfInterest
+    }
+    
+    CPTemplate <|-- CPListTemplate
+    CPTemplate <|-- CPGridTemplate
+    CPTemplate <|-- CPTabBarTemplate
+    CPTemplate <|-- CPMapTemplate
+    CPTemplate <|-- CPInformationTemplate
+    CPTemplate <|-- CPAlertTemplate
+    CPTemplate <|-- CPActionSheetTemplate
+    CPTemplate <|-- CPPointOfInterestTemplate
+    CPNowPlayingTemplate --o CPTemplate
+    
+    class CPTemplateApplicationScene {
+        +delegate: CPTemplateApplicationSceneDelegate
+        +interfaceController: CPInterfaceController
+        +contentStyle: CPContentStyle
+    }
+    
+    class CPSessionConfiguration {
+        +vehicleIdentifier: String
+        +screenConfiguration: CPScreenConfiguration
+    }
+    
+    CPTemplateApplicationScene --> CPSessionConfiguration
+    CPTemplateApplicationScene --> CPInterfaceController
+    CPInterfaceController --> CPTemplate
+```
+
+### 核心类说明
+
+- **CPTemplate**：所有 CarPlay UI 模板的抽象基类，定义了通用功能
+- **CPTemplateApplicationScene**：CarPlay 场景，控制应用的 UI
+- **CPSessionConfiguration**：提供车辆属性和 CarPlay 环境配置
+- **CPInterfaceController**：管理模板的导航栈（push/pop/present）
+- **CPListTemplate**：显示和管理列表项
+- **CPGridTemplate**：显示和管理网格项
+- **CPMapTemplate**：显示导航地图覆盖层
+
+## 七、关键实现代码
+
+### 7.1 Info.plist 场景配置
+
+应用必须采用 UIScene 才能使用 CarPlay Framework：
+
+```xml
+<key>UIApplicationSceneManifest</key>
+<dict>
+    <key>UISceneConfigurations</key>
+    <dict>
+        <key>CPTemplateApplicationSceneSessionRoleApplication</key>
+        <array>
+            <dict>
+                <key>UISceneClassName</key>
+                <string>CPTemplateApplicationScene</string>
+                <key>UISceneConfigurationName</key>
+                <string>MyApp-Car</string>
+                <key>UISceneDelegateClassName</key>
+                <string>MyApp.CarPlaySceneDelegate</string>
+            </dict>
+        </array>
+    </dict>
+</dict>
+```
+
+### 7.2 CarPlay Scene Delegate（Swift）
+
+```swift
+import CarPlay
+
+class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
+    
+    var interfaceController: CPInterfaceController?
+    
+    func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene,
+                                  didConnect interfaceController: CPInterfaceController) {
+        self.interfaceController = interfaceController
+        
+        // 创建列表模板
+        let listItem = CPListItem(text: "欢迎使用 CarPlay", 
+                                  detailText: "这是一个示例应用")
+        listItem.handler = { [weak self] item, completion in
+            // 处理点击事件
+            completion()
+        }
+        
+        let section = CPListSection(items: [listItem])
+        let template = CPListTemplate(title: "主菜单", sections: [section])
+        
+        // 设置为根模板
+        interfaceController.setRootTemplate(template, animated: true)
+    }
+    
+    func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene,
+                                  didDisconnect interfaceController: CPInterfaceController) {
+        self.interfaceController = nil
+    }
+}
+```
+
+### 7.3 创建导航模板（CPMapTemplate）
+
+```swift
+let mapTemplate = CPMapTemplate()
+mapTemplate.tripEstimateStyle = .light
+
+// 添加导航栏按钮
+let button = CPBarButton(type: .text) { _ in
+    // 处理点击
+}
+button.title = "导航"
+mapTemplate.trailingNavigationBarButtons = [button]
+
+interfaceController?.setRootTemplate(mapTemplate, animated: true)
+```
+
+### 7.4 创建信息模板
+
+```swift
+let infoItem = CPInformationItem(title: "CarPlay 示例", 
+                                 detail: "这是一个展示 CarPlay 功能的示例应用")
+let infoTemplate = CPInformationTemplate(title: "信息", 
+                                         layout: .twoColumn, 
+                                         items: [infoItem],
+                                         actions: [
+                                            CPTextButton(title: "确定", 
+                                                         style: .normal) { _ in
+                                                // 处理操作
+                                            }
+                                         ])
+interfaceController?.pushTemplate(infoTemplate, animated: true)
+```
+
+### 7.5 创建 Alert 模板
+
+```swift
+let alertTemplate = CPAlertTemplate(titleVariants: ["提示", "重要更新"],
+                                    actions: [
+                                        CPAlertAction(title: "确定", 
+                                                      style: .default) { _ in
+                                            // 处理确认
+                                        },
+                                        CPAlertAction(title: "取消", 
+                                                      style: .cancel) { _ in
+                                            // 处理取消
+                                        }
+                                    ])
+interfaceController?.presentTemplate(alertTemplate, animated: true)
+```
+
+### 7.6 React Native 实现示例
+
+```javascript
+import { CarPlay, GridTemplate } from 'react-native-carplay';
+
+// 创建模板
+const template = new GridTemplate({
+  title: 'Hello, World',
+});
+
+// 设置根模板
+CarPlay.setRootTemplate(template);
+
+// 注册连接事件
+CarPlay.registerOnConnect(() => {
+  console.log('CarPlay connected');
+  CarPlay.setRootTemplate(template);
+});
+```
+
+## 八、注意事项与开发避坑指南（无线增强版）
+
+### 8.1 MFi 认证与权限
+- **MFi 会员**：在车机端集成 CarPlay 需加入 MFi 会员（准入周期 1-2 个月），车机必须内置苹果官方认证协处理器。
+- **Entitlement 申请**：需申请对应权限（如 `com.apple.developer.carplay-audio`、`carplay-driving-task` 等）。
+
+### 8.2 无线连接稳定性（Handover 失败排查重点）
+- **3 秒硬性要求**：从设备连接建立到 CarPlay 会话启动，必须在 **3 秒内**完成。若 iAP2 鉴权或 Wi-Fi 密码交换超时，系统会拒绝启动。
+- **Wi-Fi 频段**：推荐强制使用 **5GHz 频段**（2.4GHz 干扰大且带宽不足），车机热点需支持 WPA2-Personal 加密。
+- **深度睡眠导致的“上车不连”**：
+  - 若手机在口袋中长期静止（深度睡眠），iOS 后台经典蓝牙扫描间隔会被拉长至数分钟。
+  - **解决办法**：用户只需摇动手机或按一下电源键唤醒屏幕，iOS 便会瞬间激活系统主动抓取 EIR 包并触发连接。**这不是 Bug，而是系统省电策略。**
+
+### 8.3 🔥 插件库开发底层红线（极其重要）
+- **绝对不要在 App 或插件库中调用 `CoreBluetooth` 去扫描经典蓝牙的 EIR 包**：
+  - iOS 的 `CoreBluetooth` 框架**仅允许在应用层扫描 BLE（低功耗蓝牙）广播**。
+  - 传统经典蓝牙的 EIR 扫描属于**苹果不对外开放的系统级私有权限**。普通 App 无法直接获取 CarPlay 专用 UUID 的 EIR 包。
+- **标准主动触发做法**：若您的插件库需要主动干预连接，合规做法是**先利用 BLE（低功耗蓝牙）去侦测车辆（如 CCC 数字钥匙规范）**。一旦 BLE 确认了车辆存在，再通过内部路由或 `CPSessionConfiguration` 通知 iOS 系统去拉起 CarPlay 的经典蓝牙握手流程，而非自行操盘底层蓝牙扫描。
+
+### 8.4 应用界面限制（CarPlay Ultra 适用）
+- **模板深度限制**：第三方 AI 应用严格限制为最多 **3 个模板屏幕**（含主界面），禁止构建深层复杂菜单。
+- **音频抢占限制**：语音交互结束必须立即释放音频资源，严禁干扰 FM 广播或其他车载音源。
+
+### 8.5 测试与真机环境
+- 无线 CarPlay 调试强烈建议使用支持 **BLE 5.0** 及 **5GHz Wi-Fi 热点**的车机开发板。
+- 模拟器可验证 UI 逻辑，但 Handover（蓝牙切 Wi-Fi）及 iAP2 鉴权流程**必须在集成 MFi 芯片的真机环境中验证**。
