@@ -24,6 +24,7 @@ npm run docs:sidebar
 
 - **Ios**
   - 📁 **Basic**
+    - [Swift](/ios/basic/0.swift)
     - [Struct Vs Class V1](/ios/basic/1.struct_vs_class_v1)
     - [Serial Queue](/ios/basic/11.serial_queue)
     - [Concurrent Queue](/ios/basic/12.concurrent_queue)
@@ -35,6 +36,9 @@ npm run docs:sidebar
     - [App Launch Flow](/ios/basic/18.app_launch_flow)
     - [Ios Frameworks](/ios/basic/19.ios_frameworks)
     - [Struct Vs Class V2](/ios/basic/2.struct_vs_class_v2)
+    - [Swift Marco](/ios/basic/20.swift_marco)
+    - [Swift Animation](/ios/basic/21.swift_animation)
+    - [Viper](/ios/basic/22.viper)
     - [Struct Vs Class V3](/ios/basic/3.struct_vs_class_v3)
     - [Class Vtable](/ios/basic/4.class_%20vtable)
     - [Block](/ios/basic/5.block)
@@ -58,6 +62,7 @@ npm run docs:sidebar
     - [Accessory Setupkit](/ios/functions/13.accessory_setupkit)
     - [Ffmpeg](/ios/functions/14.ffmpeg)
     - [Swift Data](/ios/functions/15.swift_data)
+    - [Tiercel Download](/ios/functions/16.Tiercel_download)
     - [Network Moya](/ios/functions/2.network-moya)
     - [Image Kingfisher](/ios/functions/3.image-kingfisher)
     - [Realm](/ios/functions/4.realm)
@@ -70,24 +75,28 @@ npm run docs:sidebar
     - [Open Gl](/ios/graphics/open_gl)
   - 📁 **Hardware**
     - 📁 **BLE**
-      - [BLE](/ios/hardware/BLE/BLE)
-      - [RFCOMM](/ios/hardware/BLE/RFCOMM)
-      - [术语](/ios/hardware/BLE/%E6%9C%AF%E8%AF%AD)
-    - 📁 **CC**
-      - [Deps](/ios/hardware/CC/Deps)
-      - [MGU](/ios/hardware/CC/MGU)
-      - [SDIP](/ios/hardware/CC/SDIP)
-      - [VehicleInfo](/ios/hardware/CC/VehicleInfo)
+      - [BLE](/ios/hardware/BLE/1.BLE)
+      - [L2CAP](/ios/hardware/BLE/2.L2CAP)
+      - [L2CAP COC](/ios/hardware/BLE/3.L2CAP-COC)
+      - [L2CAP PSM](/ios/hardware/BLE/4.L2CAP-PSM)
+      - [RFCOMM](/ios/hardware/BLE/6.RFCOMM)
     - 📁 **DK**
-      - [Digtal Key基本流程](/ios/hardware/DK/0.digtal_key%E5%9F%BA%E6%9C%AC%E6%B5%81%E7%A8%8B)
       - [DK简介](/ios/hardware/DK/1.DK%E7%AE%80%E4%BB%8B)
       - [CCC规范](/ios/hardware/DK/2.CCC%E8%A7%84%E8%8C%83)
       - [ICCE规范](/ios/hardware/DK/3.ICCE%E8%A7%84%E8%8C%83)
     - 📁 **EA**
-      - [Iap2](/ios/hardware/EA/iap2)
+      - [EA](/ios/hardware/EA/EA)
+    - 📁 **Network**
+      - [Bojour](/ios/hardware/Network/Bojour)
+      - [CFNetwork](/ios/hardware/Network/CFNetwork)
+      - [Network](/ios/hardware/Network/Network)
     - 📁 **NFC**
+      - [CoreNFC](/ios/hardware/NFC/CoreNFC)
       - [HCE](/ios/hardware/NFC/HCE)
+    - 📁 **UWB**
+      - [NearbyInteraction](/ios/hardware/UWB/NearbyInteraction)
     - [Applet](/ios/hardware/applet)
+    - [Carkey](/ios/hardware/Carkey)
     - [Carplay](/ios/hardware/Carplay)
     - [CCC](/ios/hardware/CCC)
     - [SE](/ios/hardware/SE)
@@ -116,18 +125,26 @@ npm run docs:sidebar
 - **Ai Agent**
   - [Prompt](/ai-agent/1.prompt)
 
-- **Llvm**
-  - [Ollama简介](/llvm/1.ollama%E7%AE%80%E4%BB%8B)
-  - [Ollama工作流程](/llvm/2.ollama%E5%B7%A5%E4%BD%9C%E6%B5%81%E7%A8%8B)
-  - [Llama Server](/llvm/3.llama-server)
-  - [Anythingllvm](/llvm/4.anythingllvm)
-
 - **Js**
   - [Mcp Transport Architecture](/js/mcp-transport-architecture)
 
 - **Todo**
   - [麻将](/todo/1.%E9%BA%BB%E5%B0%86)
   - [TODO LIST](/todo/TODO_LIST)
+
+- **Llm**
+  - 📁 **Tools**
+    - [Ollama简介](/llm/tools/1.ollama%E7%AE%80%E4%BB%8B)
+    - [Ollama工作流程](/llm/tools/2.ollama%E5%B7%A5%E4%BD%9C%E6%B5%81%E7%A8%8B)
+    - [Llama Server](/llm/tools/3.llama-server)
+    - [Anythingllvm](/llm/tools/4.anythingllvm)
+  - [Agent](/llm/Agent)
+  - [Embedding](/llm/Embedding)
+  - [Memory](/llm/Memory)
+  - [Prompt](/llm/Prompt)
+  - [RAG](/llm/RAG)
+  - [Token](/llm/Token)
+  - [Transform](/llm/Transform)
 
 ## Link
 
