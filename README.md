@@ -145,7 +145,3 @@ npm run docs:sidebar
   - [RAG](/llm/RAG)
   - [Token](/llm/Token)
   - [Transform](/llm/Transform)
-
-## Link
-
-[Blog](https://6a31e3a682a5e2cb9d876ec7--stupendous-melba-27be50.netlify.app/)
