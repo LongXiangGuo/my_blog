@@ -444,7 +444,7 @@ class Swiftdiagram < Formula
 
   depends_on :macos
   depends_on xcode: ["13.0"]
-
+$$
   def install
     # --disable-sandbox: SwiftPM 需要在构建期拉取 SPM 依赖（SourceKitten 等）
     system "swift", "build", "-c", "release", "--disable-sandbox", "--product", "swiftclassdiagram"
