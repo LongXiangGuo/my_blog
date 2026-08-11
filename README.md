@@ -8,7 +8,7 @@ npm run docs:sidebar
 
 ## 依赖
 
-- vitepress,node
+- vitepress, node
 
 ## Contents
 
@@ -23,12 +23,23 @@ npm run docs:sidebar
   - [Coroutine](/android/1.coroutine)
 
 - **Ios**
+  - 📁 **Architecture**
+    - [DIInject](/ios/architecture/DIInject)
+    - [Modules](/ios/architecture/Modules)
+    - [Network](/ios/architecture/Network)
+    - [Router](/ios/architecture/Router)
+  - 📁 **Av**
+    - [Ffmpeg](/ios/av/1.ffmpeg)
+    - [Av Foundation](/ios/av/2.av_foundation)
+    - [语音降噪](/ios/av/3.%E8%AF%AD%E9%9F%B3%E9%99%8D%E5%99%AA)
+    - [Av Audio](/ios/av/4.av_audio)
   - 📁 **Basic**
     - [Swift](/ios/basic/0.swift)
     - [Struct Vs Class V1](/ios/basic/1.struct_vs_class_v1)
     - [Serial Queue](/ios/basic/11.serial_queue)
     - [Concurrent Queue](/ios/basic/12.concurrent_queue)
     - [Combine](/ios/basic/13.combine)
+    - [Lock](/ios/basic/13.lock)
     - [Async Await](/ios/basic/14.async_await)
     - [Task](/ios/basic/15.task)
     - [Swift Ui](/ios/basic/16.swift_ui)
@@ -36,16 +47,22 @@ npm run docs:sidebar
     - [App Launch Flow](/ios/basic/18.app_launch_flow)
     - [Ios Frameworks](/ios/basic/19.ios_frameworks)
     - [Struct Vs Class V2](/ios/basic/2.struct_vs_class_v2)
-    - [Swift Marco](/ios/basic/20.swift_marco)
+    - [Swift Macro](/ios/basic/20.swift_macro)
     - [Swift Animation](/ios/basic/21.swift_animation)
     - [Viper](/ios/basic/22.viper)
+    - [Background Task](/ios/basic/23.background_task)
+    - [Design Pattern](/ios/basic/24.design_pattern)
+    - [Swift Ui Test](/ios/basic/25.swift_ui_test)
+    - [App Kit](/ios/basic/26.app_kit)
     - [Struct Vs Class V3](/ios/basic/3.struct_vs_class_v3)
-    - [Class Vtable](/ios/basic/4.class_%20vtable)
+    - [Class Vtable](/ios/basic/4.class_vtable)
     - [Block](/ios/basic/5.block)
     - [Ios Memory](/ios/basic/6.ios_memory)
     - [Auto Release Pool](/ios/basic/7.auto_release_pool)
   - 📁 **Core**
     - [Dyld](/ios/core/1.dyld)
+    - [Upload App Store](/ios/core/10.upload_app_store)
+    - [Code Sign](/ios/core/11.code_sign)
     - [编译流程](/ios/core/2.%E7%BC%96%E8%AF%91%E6%B5%81%E7%A8%8B)
     - [函数派发](/ios/core/3.%E5%87%BD%E6%95%B0%E6%B4%BE%E5%8F%91)
     - [Runtime](/ios/core/4.runtime)
@@ -53,16 +70,15 @@ npm run docs:sidebar
     - [Gcd](/ios/core/6.gcd)
     - [ASLR](/ios/core/7.ASLR)
     - [Crash Collect](/ios/core/8.crash_collect)
-    - [语音降噪](/ios/core/9.%E8%AF%AD%E9%9F%B3%E9%99%8D%E5%99%AA)
+    - [Apm](/ios/core/9.apm)
   - 📁 **Functions**
     - [Network Alamofire](/ios/functions/1.network-alamofire)
-    - [Av Foundation](/ios/functions/10.av_foundation)
     - [Ios Rich Text](/ios/functions/11.ios_rich_text)
     - [Animations](/ios/functions/12.animations)
     - [Accessory Setupkit](/ios/functions/13.accessory_setupkit)
-    - [Ffmpeg](/ios/functions/14.ffmpeg)
     - [Swift Data](/ios/functions/15.swift_data)
     - [Tiercel Download](/ios/functions/16.Tiercel_download)
+    - [Core Motion](/ios/functions/17.core_motion)
     - [Network Moya](/ios/functions/2.network-moya)
     - [Image Kingfisher](/ios/functions/3.image-kingfisher)
     - [Realm](/ios/functions/4.realm)
@@ -72,41 +88,44 @@ npm run docs:sidebar
     - [Large Image Render](/ios/functions/8.large-image-render)
     - [Objectbox](/ios/functions/9.objectbox)
   - 📁 **Graphics**
+    - [Core Image](/ios/graphics/core_image)
+    - [GameplayKit](/ios/graphics/GameplayKit)
     - [Open Gl](/ios/graphics/open_gl)
-  - 📁 **Hardware**
+    - [Spritekit](/ios/graphics/spritekit)
+  - 📁 **Ito**
     - 📁 **BLE**
-      - [BLE](/ios/hardware/BLE/1.BLE)
-      - [L2CAP](/ios/hardware/BLE/2.L2CAP)
-      - [L2CAP COC](/ios/hardware/BLE/3.L2CAP-COC)
-      - [L2CAP PSM](/ios/hardware/BLE/4.L2CAP-PSM)
-      - [RFCOMM](/ios/hardware/BLE/6.RFCOMM)
+      - [BLE](/ios/ito/BLE/1.BLE)
+      - [L2CAP](/ios/ito/BLE/2.L2CAP)
+      - [L2CAP COC](/ios/ito/BLE/3.L2CAP-COC)
+      - [L2CAP PSM](/ios/ito/BLE/4.L2CAP-PSM)
+      - [RFCOMM](/ios/ito/BLE/6.RFCOMM)
     - 📁 **DK**
-      - [DK简介](/ios/hardware/DK/1.DK%E7%AE%80%E4%BB%8B)
-      - [CCC规范](/ios/hardware/DK/2.CCC%E8%A7%84%E8%8C%83)
-      - [ICCE规范](/ios/hardware/DK/3.ICCE%E8%A7%84%E8%8C%83)
+      - [DK简介](/ios/ito/DK/1.DK%E7%AE%80%E4%BB%8B)
+      - [CCC规范](/ios/ito/DK/2.CCC%E8%A7%84%E8%8C%83)
+      - [ICCE规范](/ios/ito/DK/3.ICCE%E8%A7%84%E8%8C%83)
     - 📁 **EA**
-      - [EA](/ios/hardware/EA/EA)
+      - [EA](/ios/ito/EA/EA)
     - 📁 **Network**
-      - [Bojour](/ios/hardware/Network/Bojour)
-      - [CFNetwork](/ios/hardware/Network/CFNetwork)
-      - [Network](/ios/hardware/Network/Network)
+      - [Bonjour](/ios/ito/Network/Bonjour)
+      - [CFNetwork](/ios/ito/Network/CFNetwork)
+      - [Network](/ios/ito/Network/Network)
     - 📁 **NFC**
-      - [CoreNFC](/ios/hardware/NFC/CoreNFC)
-      - [HCE](/ios/hardware/NFC/HCE)
+      - [CoreNFC](/ios/ito/NFC/CoreNFC)
+      - [HCE](/ios/ito/NFC/HCE)
     - 📁 **UWB**
-      - [NearbyInteraction](/ios/hardware/UWB/NearbyInteraction)
-    - [Applet](/ios/hardware/applet)
-    - [Carkey](/ios/hardware/Carkey)
-    - [Carplay](/ios/hardware/Carplay)
-    - [CCC](/ios/hardware/CCC)
-    - [SE](/ios/hardware/SE)
+      - [NearbyInteraction](/ios/ito/UWB/NearbyInteraction)
+    - [Applet](/ios/ito/Applet)
+    - [Carkey](/ios/ito/Carkey)
+    - [Carplay](/ios/ito/Carplay)
+    - [CCC](/ios/ito/CCC)
+    - [SE](/ios/ito/SE)
 
 - **Flutter**
   - [Flutter Bloc](/flutter/1.flutter_bloc)
   - [Flutter Restorable](/flutter/10.flutter_restorable)
   - [Stock Draw](/flutter/11.stock_draw)
   - [Fl Chart](/flutter/12.fl_chart)
-  - [Offf Screen Capture](/flutter/13.offf_screen_capture)
+  - [Off Screen Capture](/flutter/13.off_screen_capture)
   - [Hive](/flutter/14.hive)
   - [Flutter Paint Widgets](/flutter/15.flutter_paint_widgets)
   - [Drift](/flutter/17.drift)
@@ -132,12 +151,15 @@ npm run docs:sidebar
   - [麻将](/todo/1.%E9%BA%BB%E5%B0%86)
   - [TODO LIST](/todo/TODO_LIST)
 
+- **Tools**
+  - [Brew](/tools/brew)
+
 - **Llm**
   - 📁 **Tools**
     - [Ollama简介](/llm/tools/1.ollama%E7%AE%80%E4%BB%8B)
     - [Ollama工作流程](/llm/tools/2.ollama%E5%B7%A5%E4%BD%9C%E6%B5%81%E7%A8%8B)
     - [Llama Server](/llm/tools/3.llama-server)
-    - [Anythingllvm](/llm/tools/4.anythingllvm)
+    - [Anythingllm](/llm/tools/4.anythingllm)
   - [Agent](/llm/Agent)
   - [Embedding](/llm/Embedding)
   - [Memory](/llm/Memory)
@@ -145,3 +167,14 @@ npm run docs:sidebar
   - [RAG](/llm/RAG)
   - [Token](/llm/Token)
   - [Transform](/llm/Transform)
+
+- **Security**
+  - [Brand](/security/brand)
+  - [ECC](/security/ECC)
+  - [Hash](/security/hash)
+  - [Secrets](/security/secrets)
+  - [Tee](/security/tee)
+  - [Vault](/security/vault)
+  - [证书管理](/security/%E8%AF%81%E4%B9%A6%E7%AE%A1%E7%90%86)
+  - [防重放篡改](/security/%E9%98%B2%E9%87%8D%E6%94%BE%E7%AF%A1%E6%94%B9)
+
