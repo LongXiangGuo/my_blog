@@ -33,9 +33,8 @@ features:
   - 核心: [Dyld](/ios/core/1.dyld) 等 8 篇
   - 功能: [Alamofire](/ios/functions/1.network-alamofire) 等 9 篇
   - 图形: [OpenGL](/ios/graphics/open_gl)
-  - 硬件: [Applet](/ios/hardware/applet) 等，含 BLE / CC / EA 子专题
+  - 硬件: [Applet](/ios/ito/Applet) 等，含 BLE / CC / EA 子专题
 - **JS**: [MCP Transport 架构](/js/mcp-transport-architecture)
-- **LLM**: [Ollama 简介](/llvm/1.ollama简介) 等 4 篇
+- **LLM**: [Ollama 简介](/llm/tools/1.ollama简介) 等 4 篇
 - **OHOS**: 内容建设中
-- **TODO**: [麻将](/todo/1.麻将) | [TODO List](/todo/TODO_LIST)
 

@@ -80,29 +80,29 @@ SpriteKit 的架构可以分为四个层次：
 ```mermaid
 graph TB
     subgraph 视图层
-        SKView[SKView<br>渲染场景的视图]
+        SKView[SKView<br/>渲染场景的视图]
     end
     
     subgraph 场景层
-        SKScene[SKScene<br>场景根节点]
+        SKScene[SKScene<br/>场景根节点]
     end
     
     subgraph 节点层
-        SKNode[SKNode<br>所有节点的基类]
-        SKSpriteNode[SKSpriteNode<br>精灵节点]
-        SKLabelNode[SKLabelNode<br>文本节点]
-        SKShapeNode[SKShapeNode<br>形状节点]
-        SKEmitterNode[SKEmitterNode<br>粒子节点]
-        SKVideoNode[SKVideoNode<br>视频节点]
-        SKCameraNode[SKCameraNode<br>相机节点]
+        SKNode[SKNode<br/>所有节点的基类]
+        SKSpriteNode[SKSpriteNode<br/>精灵节点]
+        SKLabelNode[SKLabelNode<br/>文本节点]
+        SKShapeNode[SKShapeNode<br/>形状节点]
+        SKEmitterNode[SKEmitterNode<br/>粒子节点]
+        SKVideoNode[SKVideoNode<br/>视频节点]
+        SKCameraNode[SKCameraNode<br/>相机节点]
     end
     
     subgraph 辅助组件
-        SKAction[SKAction<br>动作]
-        SKTexture[SKTexture<br>纹理]
-        SKPhysicsBody[SKPhysicsBody<br>物理体]
-        SKConstraint[SKConstraint<br>约束]
-        SKTransition[SKTransition<br>场景过渡]
+        SKAction[SKAction<br/>动作]
+        SKTexture[SKTexture<br/>纹理]
+        SKPhysicsBody[SKPhysicsBody<br/>物理体]
+        SKConstraint[SKConstraint<br/>约束]
+        SKTransition[SKTransition<br/>场景过渡]
     end
     
     SKView -->|presents| SKScene
@@ -137,14 +137,14 @@ SpriteKit 每一帧按以下顺序执行九个步骤：
 ```mermaid
 graph TD
     Start((开始帧循环)) --> Update[update:_: 游戏逻辑更新]
-    Update --> Actions[处理 Actions<br>系统内部]
-    Actions --> DidEval[didEvaluateActions<br>动作完成后回调]
-    DidEval --> Physics[模拟 Physics<br>系统内部]
-    Physics --> DidSim[didSimulatePhysics<br>物理模拟后回调]
-    DidSim --> Constraints[应用 Constraints<br>系统内部]
-    Constraints --> DidApply[didApplyConstraints<br>约束应用后回调]
-    DidApply --> DidFinish[didFinishUpdate<br>渲染前最后修改]
-    DidFinish --> Render[渲染<br>系统内部]
+    Update --> Actions[处理 Actions<br/>系统内部]
+    Actions --> DidEval[didEvaluateActions<br/>动作完成后回调]
+    DidEval --> Physics[模拟 Physics<br/>系统内部]
+    Physics --> DidSim[didSimulatePhysics<br/>物理模拟后回调]
+    DidSim --> Constraints[应用 Constraints<br/>系统内部]
+    Constraints --> DidApply[didApplyConstraints<br/>约束应用后回调]
+    DidApply --> DidFinish[didFinishUpdate<br/>渲染前最后修改]
+    DidFinish --> Render[渲染<br/>系统内部]
     Render --> Next((等待下一帧))
     Next --> Start
     

@@ -9,6 +9,19 @@ export default withMermaid(defineConfig({
   mermaid: {
     theme: 'default'
   },
+  markdown: {
+    config(md) {
+      const originInlineCode = md.renderer.rules.code_inline
+      md.renderer.rules.code_inline = (tokens, idx, opts, env, self) => {
+        tokens[idx].attrSet('v-pre', '')
+        if (originInlineCode) {
+          return originInlineCode(tokens, idx, opts, env, self)
+        }
+        // fallback 默认渲染逻辑
+        return self.renderToken(tokens, idx, opts)
+      }
+    }
+  },
   themeConfig: {
     nav: [
       { text: '首页', link: '/' },

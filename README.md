@@ -16,7 +16,6 @@ npm run docs:sidebar
 > 更新命令: `make readme-toc` 或 `node scripts/generate-readme-toc.mjs`
 
 - **📄 根目录文件**
-  - [Api Examples](/api-examples)
   - [Markdown Examples](/markdown-examples)
 
 - **Android**
@@ -31,7 +30,7 @@ npm run docs:sidebar
   - 📁 **Av**
     - [Ffmpeg](/ios/av/1.ffmpeg)
     - [Av Foundation](/ios/av/2.av_foundation)
-    - [语音降噪](/ios/av/3.%E8%AF%AD%E9%9F%B3%E9%99%8D%E5%99%AA)
+    - [语音降噪](/ios/av/3.audio_process)
     - [Av Audio](/ios/av/4.av_audio)
   - 📁 **Basic**
     - [Swift](/ios/basic/0.swift)
@@ -146,10 +145,6 @@ npm run docs:sidebar
 
 - **Js**
   - [Mcp Transport Architecture](/js/mcp-transport-architecture)
-
-- **Todo**
-  - [麻将](/todo/1.%E9%BA%BB%E5%B0%86)
-  - [TODO LIST](/todo/TODO_LIST)
 
 - **Tools**
   - [Brew](/tools/brew)
