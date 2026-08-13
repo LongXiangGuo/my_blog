@@ -15,9 +15,6 @@ npm run docs:sidebar
 > 以下目录树由 `scripts/generate-readme-toc.mjs` 自动生成，请勿手动编辑。
 > 更新命令: `make readme-toc` 或 `node scripts/generate-readme-toc.mjs`
 
-- **📄 根目录文件**
-  - [Markdown Examples](/markdown-examples)
-
 - **Android**
   - [Coroutine](/android/1.coroutine)
 
@@ -173,3 +170,6 @@ npm run docs:sidebar
   - [证书管理](/security/%E8%AF%81%E4%B9%A6%E7%AE%A1%E7%90%86)
   - [防重放篡改](/security/%E9%98%B2%E9%87%8D%E6%94%BE%E7%AF%A1%E6%94%B9)
 
+
+## Support
+https://vitepress.dev/guide/markdown

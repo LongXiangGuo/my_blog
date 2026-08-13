@@ -20,6 +20,26 @@ const IGNORE_DIRS = new Set([
 
 const PREFERRED_SECTION_ORDER = ['android', 'ios', 'ohos', 'tools', 'js', 'kt', 'flutter']
 
+// 顶部导航栏（nav）配置：按目录结构自动生成入口链接
+const NAV_SECTIONS = [
+  { section: 'ai-agent', text: 'AI Agent' },
+  { section: 'android', text: 'Android' },
+  { section: 'flutter', text: 'Flutter' },
+  { section: 'ios', text: 'iOS' },
+  { section: 'llm', text: 'LLM' },
+  { section: 'js', text: 'JS' },
+  { section: 'security', text: 'Security' },
+  { section: 'tools', text: 'Tools' },
+  { section: 'usefullinks', text: 'Useful Links' }
+]
+
+// 某些 section 入口需要指定具体文件（目录内存在多级子目录时的默认入口）
+const NAV_ENTRY_OVERRIDES = {
+  ios: 'ios/basic/1.struct_vs_class_v1',
+  llm: 'llm/tools/1.ollama简介',
+  security: 'security/ECC'
+}
+
 function walkMarkdownFiles(currentDir, baseDir, result) {
   const entries = fs.readdirSync(currentDir, { withFileTypes: true })
 
@@ -224,7 +244,30 @@ function buildSidebar(markdownFiles) {
   return sidebar
 }
 
-function writeSidebarFile(sidebar) {
+function buildNav(markdownFiles) {
+  const nav = [{ text: '首页', link: '/' }]
+
+  for (const { section, text } of NAV_SECTIONS) {
+    const sectionFiles = markdownFiles.filter((f) => f.split('/')[0] === section)
+    if (sectionFiles.length === 0) {
+      continue
+    }
+
+    let entryRel = NAV_ENTRY_OVERRIDES[section]
+    const overrideMatched = entryRel
+      && sectionFiles.some((f) => f.replace(/\.md$/i, '') === entryRel)
+
+    if (!overrideMatched) {
+      entryRel = [...sectionFiles].sort(compareByNaturalOrder)[0]
+    }
+
+    nav.push({ text, link: fileLinkFromRel(entryRel) })
+  }
+
+  return nav
+}
+
+function writeSidebarFile(sidebar, nav) {
   const content = [
     "import type { DefaultTheme } from 'vitepress'",
     '',
@@ -232,6 +275,8 @@ function writeSidebarFile(sidebar) {
     `// Generated at: ${new Date().toISOString()}`,
     '',
     `export const sidebar: DefaultTheme.Config['sidebar'] = ${JSON.stringify(sidebar, null, 2)}`,
+    '',
+    `export const nav: DefaultTheme.Config['nav'] = ${JSON.stringify(nav, null, 2)}`,
     ''
   ].join('\n')
 
@@ -243,10 +288,12 @@ function main() {
   walkMarkdownFiles(docsDir, docsDir, markdownFiles)
 
   const sidebar = buildSidebar(markdownFiles)
-  writeSidebarFile(sidebar)
+  const nav = buildNav(markdownFiles)
+  writeSidebarFile(sidebar, nav)
 
   const sectionCount = Object.keys(sidebar).length
   console.log(`Generated sidebar with ${markdownFiles.length} markdown files in ${sectionCount} section(s).`)
+  console.log(`Generated nav with ${nav.length} item(s).`)
 }
 
 main()

@@ -4,8 +4,8 @@ layout: home
 
 hero:
   name: "全栈技术笔记"
-  text: "Android / iOS / Flutter / AI Agent / LLM / JS / OHOS"
-  tagline: 跨平台开发 · 底层原理 · AI 工程实践
+  text: "跨平台 · 底层原理 · AI 工程"
+  tagline: Android / iOS / Flutter / AI Agent / LLM / JS / OHOS
   actions:
     - theme: brand
       text: 浏览内容地图

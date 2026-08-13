@@ -10,13 +10,15 @@
     "docs:dev": "vitepress dev",
     "predocs:build": "npm run docs:sidebar",
     "docs:build": "vitepress build",
-    "docs:preview": "vitepress preview"
+    "docs:preview": "vitepress preview",
+    "deploy:cos": "node scripts/deploy-cos.mjs"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "cos-nodejs-sdk-v5": "^3.0.0",
     "debug": "^4.4.3",
     "mermaid": "^11.15.0",
     "vitepress": "^1.6.4",
