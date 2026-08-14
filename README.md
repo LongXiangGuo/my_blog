@@ -1,6 +1,6 @@
 # my_blog
 
-本地知识库收集
+地址: https://longxiangguo.github.io/my_blog/
 
 ## 更新目录
 
@@ -170,6 +170,3 @@ npm run docs:sidebar
   - [证书管理](/security/%E8%AF%81%E4%B9%A6%E7%AE%A1%E7%90%86)
   - [防重放篡改](/security/%E9%98%B2%E9%87%8D%E6%94%BE%E7%AF%A1%E6%94%B9)
 
-
-## Support
-https://vitepress.dev/guide/markdown
