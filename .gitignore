@@ -4,6 +4,7 @@
 node_modules/
 .cache/
 .temp/
+npm-cache/
 
 # VitePress 本地执行 npm run build 生成的纯静态 HTML/CSS/JS 生产产物
 # 这些产物应该由公司 CI/CD 流水线自动生成并推送到 Pages 服务器，不应占用源码仓库空间
